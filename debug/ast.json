@@ -10,27 +10,18 @@
                         "type": "IntegerLiteral",
                         "value": 2
                     },
-                    "operator": "PLUS",
+                    "operator": "POW",
                     "right_node": {
-                        "type": "IntegerLiteral",
-                        "value": 3
-                    }
-                }
-            }
-        },
-        {
-            "ExpressionStatement": {
-                "type": "ExpressionStatement",
-                "expr": {
-                    "type": "InfixExpression",
-                    "left_node": {
-                        "type": "IntegerLiteral",
-                        "value": 5
-                    },
-                    "operator": "PLUS",
-                    "right_node": {
-                        "type": "IntegerLiteral",
-                        "value": 5
+                        "type": "InfixExpression",
+                        "left_node": {
+                            "type": "IntegerLiteral",
+                            "value": 1
+                        },
+                        "operator": "POW",
+                        "right_node": {
+                            "type": "IntegerLiteral",
+                            "value": 8
+                        }
                     }
                 }
             }

@@ -1,5 +1,6 @@
 from enum import Enum
 
+from Position import Position
 
 class TokenType(Enum):
     INT = "INT"
@@ -18,14 +19,13 @@ class TokenType(Enum):
 
 
 class Token:
-    def __init__(self, line_no: int, col_no: int, type_: TokenType, value=None):
+    def __init__(self, pos: Position, type_: TokenType, value=None):
         self.type = type_
         self.value = value
-        self.line_no = line_no
-        self.col_no = col_no
+        self.pos = pos
 
     def __repr__(self):
-        return f"{self.type}" + (f": {self.value}" if self.value else "") + f" [line no: {self.line_no}, col no: {self.col_no}]"
+        return f"{self.type}" + (f": {self.value}" if self.value else "") + f" [line no: {self.pos.ln}, col no: {self.pos.col}]"
 
     def __str__(self):
         return self.__repr__()

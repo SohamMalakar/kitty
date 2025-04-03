@@ -1,5 +1,5 @@
-
 from Token import Token, TokenType
+from Position import Position
 
 import string
 
@@ -12,24 +12,21 @@ LETTERS_DIGITS = LETTERS + DIGITS
 class Lexer:
     def __init__(self, program: str):
         self.program = program
-        self.pos = -1
         self.current_char = None
 
-        self.col_no = 0
-        self.line_no = 0
+        self.pos = Position(idx=-1, ln=1, col=0, fn="/path/to/the/file", ftxt=program)
 
         self.advance()
 
     def advance(self):
-        self.pos += 1
-        self.col_no += 1
-        self.current_char = self.program[self.pos] if self.pos < len(self.program) else None
+        self.pos.advance(self.current_char)
+        self.current_char = self.program[self.pos.idx] if self.pos.idx < len(self.program) else None
 
     def make_number(self):
         dot_count = 0
         number = ""
 
-        start_pos = self.col_no
+        start_pos = self.pos.copy()
 
         while self.current_char != None and self.current_char in DIGITS + ".":
             number += self.current_char
@@ -41,30 +38,23 @@ class Lexer:
                     break
 
             self.advance()
-        
+
         if dot_count == 0:
-            token = Token(self.line_no, start_pos, TokenType.INT, int(number))
+            token = Token(start_pos, TokenType.INT, int(number))
         else:
-            token = Token(self.line_no, start_pos, TokenType.FLOAT, float(number))
+            token = Token(start_pos, TokenType.FLOAT, float(number))
         
         return token
 
     def skip_whitespaces(self):
         while self.current_char in WHITESPACES:
-            if self.current_char == "\n":
-                self.col_no = 0
-                self.line_no += 1
             self.advance()
     
     def skip_comment(self):
         while self.current_char != "\n":
             self.advance()
         
-        self.col_no = 0
-        self.line_no += 1
-
         self.advance()
-
 
     def make_tokens(self):
         tokens = []
@@ -77,34 +67,34 @@ class Lexer:
             elif self.current_char == "#":
                 self.skip_comment()
             elif self.current_char == "+":
-                tokens.append(Token(self.line_no, self.col_no, TokenType.PLUS))
+                tokens.append(Token(self.pos.copy(), TokenType.PLUS))
                 self.advance()
             elif self.current_char == "-":
-                tokens.append(Token(self.line_no, self.col_no, TokenType.MINUS))
+                tokens.append(Token(self.pos.copy(), TokenType.MINUS))
                 self.advance()
             elif self.current_char == "*":
-                tokens.append(Token(self.line_no, self.col_no, TokenType.MULT))
+                tokens.append(Token(self.pos.copy(), TokenType.MULT))
                 self.advance()
             elif self.current_char == "/":
-                tokens.append(Token(self.line_no, self.col_no, TokenType.DIV))
+                tokens.append(Token(self.pos.copy(), TokenType.DIV))
                 self.advance()
             elif self.current_char == "^":
-                tokens.append(Token(self.line_no, self.col_no, TokenType.POW))
+                tokens.append(Token(self.pos.copy(), TokenType.POW))
                 self.advance()
             elif self.current_char == "(":
-                tokens.append(Token(self.line_no, self.col_no, TokenType.LPAREN))
+                tokens.append(Token(self.pos.copy(), TokenType.LPAREN))
                 self.advance()
             elif self.current_char == ")":
-                tokens.append(Token(self.line_no, self.col_no, TokenType.RPAREN))
+                tokens.append(Token(self.pos.copy(), TokenType.RPAREN))
                 self.advance()
             elif self.current_char == ";":
-                tokens.append(Token(self.line_no, self.col_no, TokenType.SEMICOLON))
+                tokens.append(Token(self.pos.copy(), TokenType.SEMICOLON))
                 self.advance()
 
             else:
-                tokens.append(Token(self.line_no, self.col_no, TokenType.UNK))
+                tokens.append(Token(self.pos.copy(), TokenType.UNK))
                 self.advance()
 
-        tokens.append(Token(self.line_no, self.col_no, TokenType.EOF))
+        tokens.append(Token(self.pos.copy(), TokenType.EOF))
 
         return tokens

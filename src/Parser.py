@@ -2,7 +2,6 @@ from enum import Enum, auto
 
 from Token import Token, TokenType
 
-
 from AST import Statement, Expression, Program
 from AST import ExpressionStatement
 from AST import InfixExpression
