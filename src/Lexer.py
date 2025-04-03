@@ -1,8 +1,12 @@
 
 from Token import Token, TokenType
 
-DIGITS = "0123456789"
+import string
+
 WHITESPACES = " \n\t"
+DIGITS = "0123456789"
+LETTERS = string.ascii_letters
+LETTERS_DIGITS = LETTERS + DIGITS
 
 
 class Lexer:
@@ -51,6 +55,16 @@ class Lexer:
                 self.col_no = 0
                 self.line_no += 1
             self.advance()
+    
+    def skip_comment(self):
+        while self.current_char != "\n":
+            self.advance()
+        
+        self.col_no = 0
+        self.line_no += 1
+
+        self.advance()
+
 
     def make_tokens(self):
         tokens = []
@@ -60,7 +74,8 @@ class Lexer:
                 tokens.append(self.make_number())
             elif self.current_char in WHITESPACES:
                 self.skip_whitespaces()
-
+            elif self.current_char == "#":
+                self.skip_comment()
             elif self.current_char == "+":
                 tokens.append(Token(self.line_no, self.col_no, TokenType.PLUS))
                 self.advance()

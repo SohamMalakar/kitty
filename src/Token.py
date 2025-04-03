@@ -29,7 +29,3 @@ class Token:
 
     def __str__(self):
         return self.__repr__()
-
-
-# test = Token(TokenType.INT, 10, 1, 0)
-# print(str(test))
