@@ -1,6 +1,6 @@
 from Position import Position
 
-# pos_start and pos_end both are inclusive
+# pos_start inclusive and pos_end exclusive
 def string_with_arrows(text, pos_start: Position, pos_end: Position) -> str:
     result = ''
 
@@ -15,7 +15,7 @@ def string_with_arrows(text, pos_start: Position, pos_end: Position) -> str:
         # Calculate line columns
         line = text[idx_start:idx_end]
         col_start = (pos_start.col - 1) if i == 0 else 0
-        col_end = pos_end.col if i == line_count - 1 else len(line)
+        col_end = (pos_end.col - 1) if i == line_count - 1 else len(line)
 
         # Append to result
         result += line + '\n'

@@ -1,30 +1,4 @@
 {
     "type": "Program",
-    "statements": [
-        {
-            "ExpressionStatement": {
-                "type": "ExpressionStatement",
-                "expr": {
-                    "type": "InfixExpression",
-                    "left_node": {
-                        "type": "IntegerLiteral",
-                        "value": 2
-                    },
-                    "operator": "POW",
-                    "right_node": {
-                        "type": "InfixExpression",
-                        "left_node": {
-                            "type": "IntegerLiteral",
-                            "value": 1
-                        },
-                        "operator": "POW",
-                        "right_node": {
-                            "type": "IntegerLiteral",
-                            "value": 8
-                        }
-                    }
-                }
-            }
-        }
-    ]
+    "statements": []
 }

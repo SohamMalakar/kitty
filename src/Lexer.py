@@ -1,20 +1,24 @@
 from Token import Token, TokenType
 from Position import Position
 
+from Error import ErrorHandler
+
 import string
 
-WHITESPACES = " \n\t"
-DIGITS = "0123456789"
+WHITESPACES = string.whitespace
+DIGITS = string.digits
 LETTERS = string.ascii_letters
 LETTERS_DIGITS = LETTERS + DIGITS
 
 
 class Lexer:
-    def __init__(self, program: str):
+    def __init__(self, program: str, path="<stdin>", error_handler=None):
         self.program = program
         self.current_char = None
 
-        self.pos = Position(idx=-1, ln=1, col=0, fn="/path/to/the/file", ftxt=program)
+        self.pos = Position(idx=-1, ln=1, col=0, fn=path, ftxt=program)
+
+        self.error_handler = error_handler if error_handler else ErrorHandler()
 
         self.advance()
 
@@ -29,25 +33,36 @@ class Lexer:
         start_pos = self.pos.copy()
 
         while self.current_char != None and self.current_char in DIGITS + ".":
-            number += self.current_char
-
             if self.current_char == ".":
                 if dot_count == 0:
                     dot_count += 1
                 else:
+                    # Potential error
+                    start_pos_ = self.pos.copy()
+                    end_pos = self.pos.copy()
+                    end_pos.advance()
+
+                    self.error_handler.add_error(
+                        start_pos_, 
+                        end_pos, 
+                        "Lexical Error", 
+                        f"Invalid number format: multiple decimal points in '{number}.'"
+                    )
+
                     break
 
+            number += self.current_char
             self.advance()
 
         if dot_count == 0:
-            token = Token(start_pos, TokenType.INT, int(number))
+            token = Token(TokenType.INT, int(number), start_pos, self.pos)
         else:
-            token = Token(start_pos, TokenType.FLOAT, float(number))
+            token = Token(TokenType.FLOAT, float(number), start_pos, self.pos)
         
         return token
 
     def skip_whitespaces(self):
-        while self.current_char in WHITESPACES:
+        while self.current_char and self.current_char in WHITESPACES:
             self.advance()
     
     def skip_comment(self):
@@ -61,40 +76,68 @@ class Lexer:
 
         while self.current_char != None:
             if self.current_char in DIGITS + ".":
+                # Potential error
+                if self.current_char == "." and (self.pos.idx + 1 >= len(self.program) or self.program[self.pos.idx + 1] not in DIGITS):
+                    start_pos = self.pos.copy()
+                    end_pos = self.pos.copy()
+                    end_pos.advance()
+
+                    self.error_handler.add_error(
+                        start_pos, 
+                        end_pos, 
+                        "Lexical Error",
+                        "Invalid token: decimal point must be followed by a digit"
+                    )
+
+                    self.advance()
+                    continue
                 tokens.append(self.make_number())
             elif self.current_char in WHITESPACES:
                 self.skip_whitespaces()
             elif self.current_char == "#":
                 self.skip_comment()
             elif self.current_char == "+":
-                tokens.append(Token(self.pos.copy(), TokenType.PLUS))
+                tokens.append(Token(TokenType.PLUS, pos_start=self.pos))
                 self.advance()
             elif self.current_char == "-":
-                tokens.append(Token(self.pos.copy(), TokenType.MINUS))
+                tokens.append(Token(TokenType.MINUS, pos_start=self.pos))
                 self.advance()
             elif self.current_char == "*":
-                tokens.append(Token(self.pos.copy(), TokenType.MULT))
+                tokens.append(Token(TokenType.MULT, pos_start=self.pos))
                 self.advance()
             elif self.current_char == "/":
-                tokens.append(Token(self.pos.copy(), TokenType.DIV))
+                tokens.append(Token(TokenType.DIV, pos_start=self.pos))
                 self.advance()
             elif self.current_char == "^":
-                tokens.append(Token(self.pos.copy(), TokenType.POW))
+                tokens.append(Token(TokenType.POW, pos_start=self.pos))
                 self.advance()
             elif self.current_char == "(":
-                tokens.append(Token(self.pos.copy(), TokenType.LPAREN))
+                tokens.append(Token(TokenType.LPAREN, pos_start=self.pos))
                 self.advance()
             elif self.current_char == ")":
-                tokens.append(Token(self.pos.copy(), TokenType.RPAREN))
+                tokens.append(Token(TokenType.RPAREN, pos_start=self.pos))
                 self.advance()
             elif self.current_char == ";":
-                tokens.append(Token(self.pos.copy(), TokenType.SEMICOLON))
+                tokens.append(Token(TokenType.SEMICOLON, pos_start=self.pos))
                 self.advance()
 
             else:
-                tokens.append(Token(self.pos.copy(), TokenType.UNK))
+                # Potential error
+                tokens.append(Token(TokenType.ILLEGAL, pos_start=self.pos))
+                
+                start_pos = self.pos.copy()
+                end_pos = self.pos.copy()
+                end_pos.advance()
+
+                self.error_handler.add_error(
+                    start_pos, 
+                    end_pos, 
+                    "Lexical Error", 
+                    f"Unrecognized character: '{self.current_char}'"
+                )
+                
                 self.advance()
 
-        tokens.append(Token(self.pos.copy(), TokenType.EOF))
+        tokens.append(Token(TokenType.EOF, pos_start=self.pos))
 
         return tokens
