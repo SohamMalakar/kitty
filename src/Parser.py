@@ -77,6 +77,7 @@ class Parser:
         return prec
 
     def parse_program(self):
+        exceptions = []
         program = Program()
 
         while self.current_token and self.current_token.type != TokenType.EOF:
@@ -88,7 +89,12 @@ class Parser:
                 self.advance()
             except Exception as e:
                 # DEBUGGING PURPOSES
-                print(f"Synchronizing after error: {e}")
+                exceptions.append(f"Synchronizing after error: {e}")
+
+        if exceptions:
+            print("===== SYNCHRONIZATION =====")
+            for exception in exceptions:
+                print(exception)
 
         return program
     
@@ -110,7 +116,7 @@ class Parser:
                 "Expected semicolon ';' after expression")
             self.synchronize([TokenType.SEMICOLON])
             self.advance()
-            raise
+            raise Exception(f"Expected semicolon ';' after expression")
 
         stmt = ExpressionStatement(expr)
 
@@ -120,7 +126,16 @@ class Parser:
         prefix_fn = self.prefix_parse_fns.get(self.current_token.type)
         if prefix_fn is None:
             # Potential error
-            # Synchronization need to be handled
+            token = self.current_token
+            self.error_handler.add_error(
+                token.pos_start,
+                token.pos_end,
+                "Syntax Error",
+                "Expected expression"
+            )
+            # Synchronization need to be improved
+            self.synchronize([TokenType.SEMICOLON])
+            self.advance()
             raise Exception(f"No prefix parse function for {self.current_token.type}")
         
         left_expr = prefix_fn()
@@ -171,7 +186,7 @@ class Parser:
                 # f"Expected closing parenthesis ')' after {token.pos_start.ftxt[token.pos_start.idx: token.pos_end.idx]}")
             self.synchronize([TokenType.SEMICOLON])
             self.advance()
-            raise
+            raise Exception(f"Expected closing parenthesis ')' after expression")
 
         self.advance()
 

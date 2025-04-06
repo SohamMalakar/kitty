@@ -1,3 +1,5 @@
-(5 + 5;
-
-5 ^ (9 * 2);
+#1.2.3 + 4;  # Multiple decimal points
+5 + );      # Missing left operand
+(6 * 7;     # Missing closing parenthesis
+#8 @ 9;      # Invalid operator
+10 + ;      # Missing right operand
