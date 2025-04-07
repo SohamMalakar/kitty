@@ -19,9 +19,9 @@ class TokenType(Enum):
 
 
 class Token:
-    def __init__(self, type_: TokenType, value=None, pos_start: Position=None, pos_end: Position=None):
+    def __init__(self, type_: TokenType, literal=None, pos_start: Position=None, pos_end: Position=None):
         self.type = type_
-        self.value = value
+        self.literal = literal
         
         if pos_start:
             self.pos_start = pos_start.copy()
@@ -32,4 +32,4 @@ class Token:
             self.pos_end = pos_end.copy()
 
     def __str__(self):
-        return f"{self.type}" + (f": {self.value}" if self.value else "") + f" [line no: {self.pos_start.ln}, col no: {self.pos_start.col}]"
+        return f"{self.type}" + (f": {self.literal}" if self.literal else "") + f" [line no: {self.pos_start.ln}, col no: {self.pos_start.col}]"

@@ -1,4 +1,38 @@
 {
     "type": "Program",
-    "statements": []
+    "statements": [
+        {
+            "ExpressionStatement": {
+                "type": "ExpressionStatement",
+                "expr": {
+                    "type": "InfixExpression",
+                    "left_node": {
+                        "type": "InfixExpression",
+                        "left_node": {
+                            "type": "IntegerLiteral",
+                            "value": 5
+                        },
+                        "operator": "*",
+                        "right_node": {
+                            "type": "InfixExpression",
+                            "left_node": {
+                                "type": "IntegerLiteral",
+                                "value": 10
+                            },
+                            "operator": "+",
+                            "right_node": {
+                                "type": "IntegerLiteral",
+                                "value": 7
+                            }
+                        }
+                    },
+                    "operator": "/",
+                    "right_node": {
+                        "type": "IntegerLiteral",
+                        "value": 5
+                    }
+                }
+            }
+        }
+    ]
 }

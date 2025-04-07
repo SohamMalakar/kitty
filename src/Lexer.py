@@ -97,33 +97,33 @@ class Lexer:
             elif self.current_char == "#":
                 self.skip_comment()
             elif self.current_char == "+":
-                tokens.append(Token(TokenType.PLUS, pos_start=self.pos))
+                tokens.append(Token(TokenType.PLUS, literal=self.current_char, pos_start=self.pos))
                 self.advance()
             elif self.current_char == "-":
-                tokens.append(Token(TokenType.MINUS, pos_start=self.pos))
+                tokens.append(Token(TokenType.MINUS, literal=self.current_char, pos_start=self.pos))
                 self.advance()
             elif self.current_char == "*":
-                tokens.append(Token(TokenType.MULT, pos_start=self.pos))
+                tokens.append(Token(TokenType.MULT, literal=self.current_char, pos_start=self.pos))
                 self.advance()
             elif self.current_char == "/":
-                tokens.append(Token(TokenType.DIV, pos_start=self.pos))
+                tokens.append(Token(TokenType.DIV, literal=self.current_char, pos_start=self.pos))
                 self.advance()
             elif self.current_char == "^":
-                tokens.append(Token(TokenType.POW, pos_start=self.pos))
+                tokens.append(Token(TokenType.POW, literal=self.current_char, pos_start=self.pos))
                 self.advance()
             elif self.current_char == "(":
-                tokens.append(Token(TokenType.LPAREN, pos_start=self.pos))
+                tokens.append(Token(TokenType.LPAREN, literal=self.current_char, pos_start=self.pos))
                 self.advance()
             elif self.current_char == ")":
-                tokens.append(Token(TokenType.RPAREN, pos_start=self.pos))
+                tokens.append(Token(TokenType.RPAREN, literal=self.current_char, pos_start=self.pos))
                 self.advance()
             elif self.current_char == ";":
-                tokens.append(Token(TokenType.SEMICOLON, pos_start=self.pos))
+                tokens.append(Token(TokenType.SEMICOLON, literal=self.current_char, pos_start=self.pos))
                 self.advance()
 
             else:
                 # Potential error
-                tokens.append(Token(TokenType.ILLEGAL, pos_start=self.pos))
+                tokens.append(Token(TokenType.ILLEGAL, literal=self.current_char, pos_start=self.pos))
                 
                 start_pos = self.pos.copy()
                 end_pos = self.pos.copy()

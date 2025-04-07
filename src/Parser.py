@@ -155,7 +155,7 @@ class Parser:
         return left_expr
 
     def parse_infix_expression(self, left_node):
-        infix_expr = InfixExpression(left_node=left_node, operator=self.current_token.type.value)
+        infix_expr = InfixExpression(left_node=left_node, operator=self.current_token.literal)
 
         precedence = self.current_precedence()
 
@@ -193,9 +193,10 @@ class Parser:
         return expr
         
     def parse_int_literal(self):
-        int_lit = IntegerLiteral(self.current_token.value)
+        int_lit = IntegerLiteral(self.current_token.literal)
         return int_lit
 
     def parse_float_literal(self):
-        float_lit = FloatLiteral(self.current_token.value)
+        float_lit = FloatLiteral(self.current_token.literal)
         return float_lit
+
