@@ -19,8 +19,9 @@ class PrecedenceType(Enum):
 PRECEDENCES = {
     TokenType.PLUS: PrecedenceType.SUM,
     TokenType.MINUS: PrecedenceType.SUM,
-    TokenType.MULT: PrecedenceType.PRODUCT,
-    TokenType.DIV: PrecedenceType.PRODUCT,
+    TokenType.ASTERISK: PrecedenceType.PRODUCT,
+    TokenType.SLASH: PrecedenceType.PRODUCT,
+    TokenType.MODULUS: PrecedenceType.PRODUCT,
     TokenType.POW: PrecedenceType.EXPONENT
 }
 
@@ -42,8 +43,9 @@ class Parser:
         self.infix_parse_fns = {
             TokenType.PLUS: self.parse_infix_expression,
             TokenType.MINUS: self.parse_infix_expression,
-            TokenType.MULT: self.parse_infix_expression,
-            TokenType.DIV: self.parse_infix_expression,
+            TokenType.ASTERISK: self.parse_infix_expression,
+            TokenType.SLASH: self.parse_infix_expression,
+            TokenType.MODULUS: self.parse_infix_expression,
             TokenType.POW: self.parse_infix_expression
         }
 

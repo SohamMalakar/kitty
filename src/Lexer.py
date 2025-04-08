@@ -103,10 +103,13 @@ class Lexer:
                 tokens.append(Token(TokenType.MINUS, literal=self.current_char, pos_start=self.pos))
                 self.advance()
             elif self.current_char == "*":
-                tokens.append(Token(TokenType.MULT, literal=self.current_char, pos_start=self.pos))
+                tokens.append(Token(TokenType.ASTERISK, literal=self.current_char, pos_start=self.pos))
                 self.advance()
             elif self.current_char == "/":
-                tokens.append(Token(TokenType.DIV, literal=self.current_char, pos_start=self.pos))
+                tokens.append(Token(TokenType.SLASH, literal=self.current_char, pos_start=self.pos))
+                self.advance()
+            elif self.current_char == "%":
+                tokens.append(Token(TokenType.MODULUS, literal=self.current_char, pos_start=self.pos))
                 self.advance()
             elif self.current_char == "^":
                 tokens.append(Token(TokenType.POW, literal=self.current_char, pos_start=self.pos))
