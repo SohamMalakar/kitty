@@ -33,6 +33,23 @@
                     }
                 }
             }
+        },
+        {
+            "ExpressionStatement": {
+                "type": "ExpressionStatement",
+                "expr": {
+                    "type": "InfixExpression",
+                    "left_node": {
+                        "type": "FloatLiteral",
+                        "value": 5.9
+                    },
+                    "operator": "*",
+                    "right_node": {
+                        "type": "FloatLiteral",
+                        "value": 5.1
+                    }
+                }
+            }
         }
     ]
 }

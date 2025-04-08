@@ -66,7 +66,27 @@ class Compiler:
                     value = self.builder.mul(left_value, right_value)
                 case '/':
                     value = self.builder.sdiv(left_value, right_value)
-        
+                case '%':
+                    value = self.builder.srem(left_value, right_value)
+                case '^':
+                    pass
+
+        elif isinstance(right_type, ir.FloatType) and isinstance(left_type, ir.FloatType):
+            Type = self.type_map["float"]
+            match operator:
+                case '+':
+                    value = self.builder.fadd(left_value, right_value)
+                case '-':
+                    value = self.builder.fsub(left_value, right_value)
+                case '*':
+                    value = self.builder.fmul(left_value, right_value)
+                case '/':
+                    value = self.builder.fdiv(left_value, right_value)
+                case '%':
+                    value = self.builder.frem(left_value, right_value)
+                case '^':
+                    pass
+
         return value, Type
 
     def resolve_value(self, node: Expression, value_type: str = None) -> tuple[ir.Value, ir.Type]:
