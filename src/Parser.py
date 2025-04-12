@@ -4,7 +4,7 @@ from Token import Token, TokenType
 from Error import ErrorHandler
 
 from AST import Statement, Expression, Program
-from AST import ExpressionStatement, VarStatement
+from AST import ExpressionStatement, VarStatement, FunctionStatement, ReturnStatement
 from AST import InfixExpression
 from AST import IntegerLiteral, FloatLiteral, IdentifierLiteral
 
@@ -31,10 +31,12 @@ class Parser:
         self.tokens = tokens
         self.pos = -1
         self.current_token = None
+        self.exceptions = []
         self.error_handler = error_handler if error_handler else ErrorHandler()
         
         # Register prefix parsing functions
         self.prefix_parse_fns = {
+            TokenType.IDENT: self.parse_indentifier,
             TokenType.INT: self.parse_int_literal,
             TokenType.FLOAT: self.parse_float_literal,
             TokenType.LPAREN: self.parse_grouped_expression
@@ -77,9 +79,15 @@ class Parser:
         token = self.peek_token()
         return PRECEDENCES.get(token.type, PrecedenceType.LOWEST) if token else PrecedenceType.LOWEST
 
-    def expect_token(self, token_type, error_message, error_at_current=False):
+    def expect_token(self, token_type, error_message, look_current=False, error_at_current=False):
         """Check if next token is of expected type and advance, otherwise handle error"""
-        if self.peek_token() and self.peek_token().type == token_type:
+
+        if look_current:
+            error_at_current = True
+
+        token = self.current_token if look_current else self.peek_token()
+
+        if token and token.type == token_type:
             self.advance()
             return True
         else:
@@ -87,7 +95,7 @@ class Parser:
             self.report_error(token, error_message)
             return False
 
-    def report_error(self, token, message):
+    def report_error(self, token, message, do_advance=True, sync_tokens=[TokenType.SEMICOLON]):
         """Report an error and synchronize parser state"""
         self.error_handler.add_error(
             token.pos_start, 
@@ -95,8 +103,9 @@ class Parser:
             "Syntax Error",
             message
         )
-        self.synchronize([TokenType.SEMICOLON])
-        self.advance()
+        self.synchronize(sync_tokens)
+        if do_advance:
+            self.advance()
         raise Exception(message)
 
     # def expect_semicolon(self):
@@ -112,7 +121,6 @@ class Parser:
 
     def parse_program(self):
         """Parse the entire program"""
-        exceptions = []
         program = Program()
 
         while self.current_token and self.current_token.type != TokenType.EOF:
@@ -124,11 +132,11 @@ class Parser:
                 # Advance because the current token is ';'
                 self.advance()
             except Exception as e:
-                exceptions.append(f"Synchronizing after error: {e}")
+                self.exceptions.append(f"Synchronizing after error: {e}")
 
-        if exceptions:
+        if self.exceptions:
             print("===== SYNCHRONIZATION =====")
-            for exception in exceptions:
+            for exception in self.exceptions:
                 print(exception)
 
         return program
@@ -138,6 +146,10 @@ class Parser:
         match self.current_token.type:
             case TokenType.VAR:
                 return self.parse_var_statement()
+            case TokenType.DEF:
+                return self.parse_function_statement()
+            case TokenType.RETURN:
+                return self.parse_return_statement()
             case _:
                 return self.parse_expression_statement()
     
@@ -174,6 +186,70 @@ class Parser:
         if not self.expect_semicolon():
             return None
 
+        return stmt
+    
+    def parse_function_statement(self):
+        func = FunctionStatement()
+
+        try:
+            if not self.expect_token(TokenType.IDENT, "Expected identifier after 'def'", error_at_current=True):
+                return None
+
+            func.name = IdentifierLiteral(self.current_token.literal)
+
+            if not self.expect_token(TokenType.LPAREN, "Expected left parenthesis '(", error_at_current=True):
+                return None
+            
+            func.parameters = [] # TODO: implement
+
+            if not self.expect_token(TokenType.RPAREN, "Expected right parenthesis ')'", error_at_current=True):
+                return None
+
+            if not self.expect_token(TokenType.ARROW, "Expected an arrow '->'", error_at_current=True):
+                return None
+
+            if not self.expect_token(TokenType.TYPE, "Expected type after '->'", error_at_current=True):
+                return None
+            
+            func.return_type = self.current_token.literal
+            
+            if not self.expect_token(TokenType.COLON, "Expected colon ':' after type", error_at_current=True):
+                return None
+            
+            self.advance()
+        except Exception as e:
+            self.exceptions.append(f"Synchronizing after error: {e}")
+
+        # Parse statements
+        # while self.current_token and self.current_token.type != TokenType.END:
+        #     func.body.append(self.parse_statement())
+        #     self.advance()
+
+        # Parse statements
+        while self.current_token and self.current_token.type != TokenType.END and self.current_token.type != TokenType.EOF:
+            try:
+                stmt = self.parse_statement()
+                if stmt is not None:
+                    func.body.append(stmt)
+                self.advance()
+            except Exception as e:
+                self.exceptions.append(f"Synchronizing after error: {e}")
+
+        if not self.expect_token(TokenType.END, "Expected end keyword after a block", look_current=True):
+            return None
+
+        return func
+
+    def parse_return_statement(self):
+        stmt = ReturnStatement()
+
+        self.advance()
+
+        stmt.return_value = self.parse_expression(PrecedenceType.LOWEST)
+
+        if not self.expect_semicolon():
+            return None
+        
         return stmt
 
     def parse_expression_statement(self):
@@ -244,7 +320,10 @@ class Parser:
 
         self.advance()  # Skip the closing parenthesis
         return expr
-        
+
+    def parse_indentifier(self):
+        return IdentifierLiteral(self.current_token.literal)
+
     def parse_int_literal(self):
         """Parse an integer literal"""
         return IntegerLiteral(self.current_token.literal)

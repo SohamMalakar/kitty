@@ -1,7 +1,7 @@
 from llvmlite import ir
 
 from AST import Node, NodeType, Program, Expression
-from AST import ExpressionStatement, VarStatement
+from AST import ExpressionStatement, VarStatement, FunctionStatement, ReturnStatement
 from AST import InfixExpression
 from AST import IntegerLiteral, FloatLiteral, IdentifierLiteral
 
@@ -30,7 +30,13 @@ class Compiler:
             
             case NodeType.VarStatement:
                 self.visit_var_statement(node)
-
+            
+            case NodeType.FunctionStatement:
+                self.visit_function_statement(node)
+            
+            case NodeType.ReturnStatement:
+                self.visit_return_statement(node)
+            
             case NodeType.InfixExpression:
                 self.visit_infix_expression(node)
     
@@ -70,10 +76,51 @@ class Compiler:
             self.builder.store(value, ptr)
 
             # Add the variable to the environment
-            self.env.define(name, value, Type)
+            self.env.define(name, ptr, Type)
         else:
             ptr, _ = self.env.lookup(name)
             self.builder.store(value, ptr)
+
+    def visit_function_statement(self, node: FunctionStatement):
+        name: str = node.name.value
+        body = node.body
+        params: list[IdentifierLiteral] = node.parameters
+
+        # Keep track of the names of each parameter
+        param_names: list[str] = [p.value for p in params]
+
+        # Keep track of the types for each parameter
+        param_types: list[ir.Type] = []  # TODO
+
+        return_type: ir.Type = self.type_map[node.return_type]
+
+        fnty: ir.FunctionType = ir.FunctionType(return_type, param_types)
+        func: ir.Function = ir.Function(self.module, fnty, name=name)
+
+        block: ir.Block = func.append_basic_block(f'{name}_entry')
+
+        previous_builder = self.builder
+
+        self.builder = ir.IRBuilder(block)
+
+        previous_env = self.env
+
+        self.env = Environment(parent=self.env)
+        self.env.define(name, func, return_type)
+
+        for stmt in body:
+            self.compile(stmt)
+
+        self.env = previous_env
+        self.env.define(name, func, return_type)
+
+        self.builder = previous_builder
+
+    def visit_return_statement(self, node: ReturnStatement):
+        value: Expression = node.return_value
+        value, Type = self.resolve_value(value)
+
+        self.builder.ret(value)
 
     def visit_infix_expression(self, node: InfixExpression):
         operator: str = node.operator

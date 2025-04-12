@@ -76,11 +76,24 @@ class Lexer:
 
         start_pos = self.pos.copy()
 
-        while self.current_char in LETTERS_DIGITS + "_":
+        while self.current_char != None and self.current_char in LETTERS_DIGITS + "_":
             ident += self.current_char
             self.advance()
 
-        return Token(lookup_ident(ident), ident, start_pos, self.pos.copy())
+        return Token(lookup_ident(ident), ident, start_pos, self.pos)
+
+    def make_minus_or_arrow(self):
+        literal = self.current_char
+        start_pos = self.pos.copy()
+
+        self.advance()
+
+        if self.current_char == '>':
+            literal += self.current_char
+            self.advance()
+            return Token(TokenType.ARROW, literal, start_pos, self.pos)
+        
+        return Token(TokenType.MINUS, literal, pos_start=start_pos)
 
     def make_tokens(self):
         tokens = []
@@ -113,8 +126,9 @@ class Lexer:
                 tokens.append(Token(TokenType.PLUS, literal=self.current_char, pos_start=self.pos))
                 self.advance()
             elif self.current_char == "-":
-                tokens.append(Token(TokenType.MINUS, literal=self.current_char, pos_start=self.pos))
-                self.advance()
+                tokens.append(self.make_minus_or_arrow())
+                # tokens.append(Token(TokenType.MINUS, literal=self.current_char, pos_start=self.pos))
+                # self.advance()
             elif self.current_char == "*":
                 tokens.append(Token(TokenType.ASTERISK, literal=self.current_char, pos_start=self.pos))
                 self.advance()

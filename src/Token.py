@@ -19,6 +19,10 @@ class TokenType(Enum):
     VAR = "VAR"
     TYPE = "TYPE"
     COLON = "COLON"
+    DEF = "DEF"
+    RETURN = "RETURN"
+    ARROW = "ARROW"
+    END = "END"
     SEMICOLON = "SEMICOLON"
     EOF = "EOF"
     ILLEGAL = "ILLEGAL"
@@ -42,10 +46,13 @@ class Token:
 
 
 KEYWORDS = {
-    "var": TokenType.VAR
+    "var": TokenType.VAR,
+    "def": TokenType.DEF,
+    "end": TokenType.END,
+    "return": TokenType.RETURN
 }
 
-TYPE_KEYWORDS = ["int", "float"]
+TYPE_KEYWORDS = ["int", "float", "bool"]
 
 def lookup_ident(ident: str) -> TokenType:
     tt = KEYWORDS.get(ident)
