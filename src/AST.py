@@ -6,6 +6,7 @@ class NodeType(Enum):
     ExpressionStatement = "ExpressionStatement"
     FunctionStatement = "FunctionStatement"
     ReturnStatement = "ReturnStatement"
+    AssignStatement = "AssignStatement"
     VarStatement = "VarStatement"
     InfixExpression = "InfixExpression"
     IntegerLiteral = "IntegerLiteral"
@@ -54,6 +55,22 @@ class ExpressionStatement(Statement):
         return {
             "type": self.type().value,
             "expr": self.expr.json()
+        }
+
+
+class AssignStatement(Statement):
+    def __init__(self, ident: Expression = None, right_value: Expression = None):
+        self.ident = ident
+        self.right_value = right_value
+    
+    def type(self):
+        return NodeType.AssignStatement
+    
+    def json(self):
+        return {
+            "type": self.type().value,
+            "ident": self.ident.json(),
+            "right_value": self.right_value.json()
         }
 
 

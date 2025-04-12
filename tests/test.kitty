@@ -1,5 +1,6 @@
 def add() -> int:
     var a: int = 2;
     var b: int = 8;
+    a = a * b;
     return a + b;
 end

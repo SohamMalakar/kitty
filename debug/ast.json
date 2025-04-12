@@ -36,6 +36,25 @@
                         "value_type": "int"
                     },
                     {
+                        "type": "AssignStatement",
+                        "ident": {
+                            "type": "IdentifierLiteral",
+                            "value": "a"
+                        },
+                        "right_value": {
+                            "type": "InfixExpression",
+                            "left_node": {
+                                "type": "IdentifierLiteral",
+                                "value": "a"
+                            },
+                            "operator": "*",
+                            "right_node": {
+                                "type": "IdentifierLiteral",
+                                "value": "b"
+                            }
+                        }
+                    },
+                    {
                         "type": "ReturnStatement",
                         "return_value": {
                             "type": "InfixExpression",

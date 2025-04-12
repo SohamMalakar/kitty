@@ -4,7 +4,7 @@ from Token import Token, TokenType
 from Error import ErrorHandler
 
 from AST import Statement, Expression, Program
-from AST import ExpressionStatement, VarStatement, FunctionStatement, ReturnStatement
+from AST import ExpressionStatement, VarStatement, FunctionStatement, ReturnStatement, AssignStatement
 from AST import InfixExpression
 from AST import IntegerLiteral, FloatLiteral, IdentifierLiteral
 
@@ -143,6 +143,10 @@ class Parser:
     
     def parse_statement(self):
         """Parse a statement based on the current token type"""
+
+        if self.current_token.type == TokenType.IDENT and self.peek_token().type == TokenType.EQ:
+            return self.parse_assignment_statement()
+
         match self.current_token.type:
             case TokenType.VAR:
                 return self.parse_var_statement()
@@ -153,6 +157,21 @@ class Parser:
             case _:
                 return self.parse_expression_statement()
     
+    def parse_assignment_statement(self):
+        stmt = AssignStatement()
+
+        stmt.ident = self.parse_indentifier()
+
+        self.advance() # skips the 'IDENT'
+        self.advance() # skips the '='
+
+        stmt.right_value = self.parse_expression(PrecedenceType.LOWEST)
+
+        if not self.expect_semicolon():
+            return None
+
+        return stmt
+
     def parse_var_statement(self):
         """Parse a variable declaration statement"""
         stmt = VarStatement()

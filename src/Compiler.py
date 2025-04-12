@@ -1,7 +1,7 @@
 from llvmlite import ir
 
 from AST import Node, NodeType, Program, Expression
-from AST import ExpressionStatement, VarStatement, FunctionStatement, ReturnStatement
+from AST import ExpressionStatement, VarStatement, FunctionStatement, ReturnStatement, AssignStatement
 from AST import InfixExpression
 from AST import IntegerLiteral, FloatLiteral, IdentifierLiteral
 
@@ -19,6 +19,8 @@ class Compiler:
         self.builder: ir.IRBuilder = ir.IRBuilder()
 
         self.env: Environment = Environment()
+
+        self.errors = []
     
     def compile(self, node: Node):
         match node.type():
@@ -36,6 +38,9 @@ class Compiler:
             
             case NodeType.ReturnStatement:
                 self.visit_return_statement(node)
+            
+            case NodeType.AssignStatement:
+                self.visit_assign_statement(node)
             
             case NodeType.InfixExpression:
                 self.visit_infix_expression(node)
@@ -121,6 +126,18 @@ class Compiler:
         value, Type = self.resolve_value(value)
 
         self.builder.ret(value)
+    
+    def visit_assign_statement(self, node: AssignStatement):
+        name = node.ident.value
+        value = node.right_value
+
+        value, Type = self.resolve_value(value)
+
+        if self.env.lookup(name) is None:
+            self.errors.append(f"COMPILE ERROR: Identifier {name} has not been declared before it was re-assigned.")
+        else:
+            ptr, _ = self.env.lookup(name)
+            self.builder.store(value, ptr)
 
     def visit_infix_expression(self, node: InfixExpression):
         operator: str = node.operator
