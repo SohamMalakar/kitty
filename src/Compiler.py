@@ -1,8 +1,11 @@
 from llvmlite import ir
 
-from AST import Node, NodeType, Program, Expression, Statement
-from AST import ExpressionStatement, InfixExpression
-from AST import IntegerLiteral, FloatLiteral
+from AST import Node, NodeType, Program, Expression
+from AST import ExpressionStatement, VarStatement
+from AST import InfixExpression
+from AST import IntegerLiteral, FloatLiteral, IdentifierLiteral
+
+from Environment import Environment
 
 class Compiler:
     def __init__(self):
@@ -14,6 +17,8 @@ class Compiler:
         self.module: ir.Module = ir.Module("main")
 
         self.builder: ir.IRBuilder = ir.IRBuilder()
+
+        self.env: Environment = Environment()
     
     def compile(self, node: Node):
         match node.type():
@@ -22,6 +27,9 @@ class Compiler:
             
             case NodeType.ExpressionStatement:
                 self.visit_expression_statement(node)
+            
+            case NodeType.VarStatement:
+                self.visit_var_statement(node)
 
             case NodeType.InfixExpression:
                 self.visit_infix_expression(node)
@@ -41,11 +49,31 @@ class Compiler:
         for stmt in node.statements:
             self.compile(stmt)
         
-        return_value: ir.Constant = ir.Constant(self.type_map["int"], 69)
+        return_value: ir.Constant = ir.Constant(self.type_map["int"], 0)
         self.builder.ret(return_value)
     
     def visit_expression_statement(self, node: ExpressionStatement):
         self.compile(node.expr)
+    
+    def visit_var_statement(self, node: VarStatement):
+        name = node.name.value
+        value = node.value
+        value_type = node.value_type # TODO: Implement
+
+        value, Type = self.resolve_value(node=value)
+
+        if self.env.lookup(name) is None:
+            # Define and allocate the variable
+            ptr = self.builder.alloca(Type)
+
+            # Starting the value to the ptr
+            self.builder.store(value, ptr)
+
+            # Add the variable to the environment
+            self.env.define(name, value, Type)
+        else:
+            ptr, _ = self.env.lookup(name)
+            self.builder.store(value, ptr)
 
     def visit_infix_expression(self, node: InfixExpression):
         operator: str = node.operator
@@ -69,7 +97,7 @@ class Compiler:
                 case '%':
                     value = self.builder.srem(left_value, right_value)
                 case '^':
-                    pass
+                    pass # TODO: implement
 
         elif isinstance(right_type, ir.FloatType) and isinstance(left_type, ir.FloatType):
             Type = self.type_map["float"]
@@ -85,7 +113,7 @@ class Compiler:
                 case '%':
                     value = self.builder.frem(left_value, right_value)
                 case '^':
-                    pass
+                    pass # TODO: implement
 
         return value, Type
 
@@ -99,6 +127,10 @@ class Compiler:
                 node: FloatLiteral = node
                 value, Type = node.value, self.type_map["float" if value_type is None else value_type]
                 return ir.Constant(Type, value), Type
+            case NodeType.IdentifierLiteral:
+                node: IdentifierLiteral = node
+                ptr, Type = self.env.lookup(node.value)
+                return self.builder.load(ptr), Type
             
             case NodeType.InfixExpression:
                 return self.visit_infix_expression(node)

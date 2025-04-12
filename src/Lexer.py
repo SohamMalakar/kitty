@@ -1,4 +1,4 @@
-from Token import Token, TokenType
+from Token import Token, TokenType, lookup_ident
 from Position import Position
 
 from Error import ErrorHandler
@@ -71,11 +71,24 @@ class Lexer:
         
         self.advance()
 
+    def make_identifier(self):
+        ident = ""
+
+        start_pos = self.pos.copy()
+
+        while self.current_char in LETTERS_DIGITS + "_":
+            ident += self.current_char
+            self.advance()
+
+        return Token(lookup_ident(ident), ident, start_pos, self.pos.copy())
+
     def make_tokens(self):
         tokens = []
 
         while self.current_char != None:
-            if self.current_char in DIGITS + ".":
+            if self.current_char in LETTERS + "_":
+                tokens.append(self.make_identifier())
+            elif self.current_char in DIGITS + ".":
                 # Potential error
                 if self.current_char == "." and (self.pos.idx + 1 >= len(self.program) or self.program[self.pos.idx + 1] not in DIGITS):
                     start_pos = self.pos.copy()
@@ -113,6 +126,12 @@ class Lexer:
                 self.advance()
             elif self.current_char == "^":
                 tokens.append(Token(TokenType.POW, literal=self.current_char, pos_start=self.pos))
+                self.advance()
+            elif self.current_char == "=":
+                tokens.append(Token(TokenType.EQ, literal=self.current_char, pos_start=self.pos))
+                self.advance()
+            elif self.current_char == ":":
+                tokens.append(Token(TokenType.COLON, literal=self.current_char, pos_start=self.pos))
                 self.advance()
             elif self.current_char == "(":
                 tokens.append(Token(TokenType.LPAREN, literal=self.current_char, pos_start=self.pos))

@@ -1,0 +1,3 @@
+5 + );      # Missing left operand
+(6 * 7;     # Missing closing parenthesis
+10 + ;      # Missing right operand

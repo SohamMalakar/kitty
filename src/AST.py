@@ -4,9 +4,11 @@ from enum import Enum
 class NodeType(Enum):
     Program = "Program"
     ExpressionStatement = "ExpressionStatement"
+    VarStatement = "VarStatement"
     InfixExpression = "InfixExpression"
     IntegerLiteral = "IntegerLiteral"
     FloatLiteral = "FloatLiteral"
+    IdentifierLiteral = "IdentifierLiteral"
 
 
 class Node:
@@ -52,6 +54,23 @@ class ExpressionStatement(Statement):
             "expr": self.expr.json()
         }
 
+class VarStatement(Statement):
+    def __init__(self, name: Expression = None, value: Expression = None, value_type: str = None):
+        self.name = name
+        self.value = value
+        self.value_type = value_type
+    
+    def type(self):
+        return NodeType.VarStatement
+    
+    def json(self):
+        return {
+            "type": self.type().value,
+            "name": self.name.json(),
+            "value": self.value.json(),
+            "value_type": self.value_type
+        }
+
 
 class InfixExpression(Expression):
     def __init__(self, left_node: Expression, operator: str, right_node: Expression = None):
@@ -91,6 +110,19 @@ class FloatLiteral(Expression):
     
     def type(self):
         return NodeType.FloatLiteral
+    
+    def json(self):
+        return {
+            "type": self.type().value,
+            "value": self.value
+        }
+
+class IdentifierLiteral(Expression):
+    def __init__(self, value):
+        self.value = value
+    
+    def type(self):
+        return NodeType.IdentifierLiteral
     
     def json(self):
         return {
