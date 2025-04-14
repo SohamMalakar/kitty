@@ -1,8 +1,5 @@
-
 def func() -> int:
-
     var a: int = 0;
-
     if 1 > 2:
         9.7 + 0.5;
         a = 10 + 7 + 9;
@@ -13,7 +10,11 @@ def func() -> int:
     else:
         10 / 2;
     end
-
     return a;
-
 end
+
+def test() -> int:
+    return func();
+end
+
+test();

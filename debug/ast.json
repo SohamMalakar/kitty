@@ -184,6 +184,43 @@
                     }
                 ]
             }
+        },
+        {
+            "FunctionStatement": {
+                "type": "FunctionStatement",
+                "name": {
+                    "type": "IdentifierLiteral",
+                    "value": "test"
+                },
+                "return_type": "int",
+                "parameters": [],
+                "body": [
+                    {
+                        "type": "ReturnStatement",
+                        "return_value": {
+                            "type": "CallExpression",
+                            "function": {
+                                "type": "IdentifierLiteral",
+                                "value": "func"
+                            },
+                            "args": []
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "ExpressionStatement": {
+                "type": "ExpressionStatement",
+                "expr": {
+                    "type": "CallExpression",
+                    "function": {
+                        "type": "IdentifierLiteral",
+                        "value": "test"
+                    },
+                    "args": []
+                }
+            }
         }
     ]
 }

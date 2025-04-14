@@ -10,6 +10,7 @@ class NodeType(Enum):
     IfStatement = "IfStatement"
     VarStatement = "VarStatement"
     InfixExpression = "InfixExpression"
+    CallExpression = "CallExpression"
     IntegerLiteral = "IntegerLiteral"
     FloatLiteral = "FloatLiteral"
     IdentifierLiteral = "IdentifierLiteral"
@@ -154,9 +155,9 @@ class IfStatement(Statement):
 
 
 class FunctionStatement(Statement):
-    def __init__(self, parameters = [], body = [], name = None, return_type: str = None):
-        self.parameters = parameters
-        self.body = body
+    def __init__(self, parameters = None, body = None, name = None, return_type: str = None):
+        self.parameters = parameters or []
+        self.body = body or []
         self.name = name
         self.return_type = return_type
 
@@ -220,6 +221,22 @@ class InfixExpression(Expression):
             "left_node": self.left_node.json(),
             "operator": self.operator,
             "right_node": self.right_node.json()
+        }
+
+
+class CallExpression(Expression):
+    def __init__(self, function: Expression = None, args: list[Expression] = None):
+        self.function = function # IdentifierLiteral
+        self.args = args or []
+
+    def type(self):
+        return NodeType.CallExpression
+    
+    def json(self):
+        return {
+            "type": self.type().value,
+            "function": self.function.json(),
+            "args": [arg.json() for arg in self.args]
         }
 
 

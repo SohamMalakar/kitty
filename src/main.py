@@ -48,6 +48,7 @@ if not parser.error_handler.report():
 if PARSER_DEBUG:
     with open("debug/ast.json", "w") as f:
         json.dump(ast.json(), f, indent=4)
+        print("Successfully wrote AST to debug/ast.json")
 
 c: Compiler = Compiler()
 c.compile(node=ast)

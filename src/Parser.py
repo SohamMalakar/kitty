@@ -5,7 +5,7 @@ from Error import ErrorHandler
 
 from AST import Statement, Expression, Program
 from AST import ExpressionStatement, VarStatement, FunctionStatement, ReturnStatement, AssignStatement, IfStatement
-from AST import InfixExpression
+from AST import InfixExpression, CallExpression
 from AST import IntegerLiteral, FloatLiteral, IdentifierLiteral, BooleanLiteral
 
 
@@ -16,6 +16,7 @@ class PrecedenceType(Enum):
     SUM = auto()
     PRODUCT = auto()
     EXPONENT = auto()
+    CALL = auto()
 
 
 PRECEDENCES = {
@@ -31,6 +32,7 @@ PRECEDENCES = {
     TokenType.GT: PrecedenceType.LESSGREATER,
     TokenType.LT_EQ: PrecedenceType.LESSGREATER,
     TokenType.GT_EQ: PrecedenceType.LESSGREATER,
+    TokenType.LPAREN: PrecedenceType.CALL
 }
 
 
@@ -65,7 +67,8 @@ class Parser:
             TokenType.LT: self.parse_infix_expression,
             TokenType.GT: self.parse_infix_expression,
             TokenType.LT_EQ: self.parse_infix_expression,
-            TokenType.GT_EQ: self.parse_infix_expression
+            TokenType.GT_EQ: self.parse_infix_expression,
+            TokenType.LPAREN: self.parse_call_expression
         }
 
         self.advance()
@@ -338,34 +341,34 @@ class Parser:
     def parse_function_statement(self):
         func = FunctionStatement()
 
-        try:
-            if not self.expect_token(TokenType.IDENT, "Expected identifier after 'def'", error_at_current=True):
-                return None
+        # try:
+        if not self.expect_token(TokenType.IDENT, "Expected identifier after 'def'", error_at_current=True):
+            return None
 
-            func.name = IdentifierLiteral(self.current_token.literal)
+        func.name = IdentifierLiteral(self.current_token.literal)
 
-            if not self.expect_token(TokenType.LPAREN, "Expected left parenthesis '(", error_at_current=True):
-                return None
-            
-            func.parameters = [] # TODO: implement
+        if not self.expect_token(TokenType.LPAREN, "Expected left parenthesis '(", error_at_current=True):
+            return None
+        
+        func.parameters = [] # TODO: implement
 
-            if not self.expect_token(TokenType.RPAREN, "Expected right parenthesis ')'", error_at_current=True):
-                return None
+        if not self.expect_token(TokenType.RPAREN, "Expected right parenthesis ')'", error_at_current=True):
+            return None
 
-            if not self.expect_token(TokenType.ARROW, "Expected an arrow '->'", error_at_current=True):
-                return None
+        if not self.expect_token(TokenType.ARROW, "Expected an arrow '->'", error_at_current=True):
+            return None
 
-            if not self.expect_token(TokenType.TYPE, "Expected type after '->'", error_at_current=True):
-                return None
-            
-            func.return_type = self.current_token.literal
-            
-            if not self.expect_token(TokenType.COLON, "Expected colon ':' after type", error_at_current=True):
-                return None
-            
-            self.advance()
-        except Exception as e:
-            self.exceptions.append(f"Synchronizing after error: {e}")
+        if not self.expect_token(TokenType.TYPE, "Expected type after '->'", error_at_current=True):
+            return None
+        
+        func.return_type = self.current_token.literal
+        
+        if not self.expect_token(TokenType.COLON, "Expected colon ':' after type", error_at_current=True):
+            return None
+        
+        self.advance()
+        # except Exception as e:
+        #     self.exceptions.append(f"Synchronizing after error: {e}")
 
         # Parse statements
         # while self.current_token and self.current_token.type != TokenType.END:
@@ -466,6 +469,15 @@ class Parser:
             return None
 
         # self.advance()  # Skip the closing parenthesis
+        return expr
+    
+    def parse_call_expression(self, function: Expression):
+        expr = CallExpression(function=function)
+        expr.args = [] # TODO: implement this
+        
+        if not self.expect_token(TokenType.RPAREN, "Expected closing parenthesis ')' after function call", error_at_current=True):
+            return None
+        
         return expr
 
     def parse_indentifier(self):

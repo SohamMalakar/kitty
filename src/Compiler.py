@@ -2,7 +2,7 @@ from llvmlite import ir
 
 from AST import Node, NodeType, Program, Expression
 from AST import ExpressionStatement, VarStatement, FunctionStatement, ReturnStatement, AssignStatement, IfStatement
-from AST import InfixExpression
+from AST import InfixExpression, CallExpression
 from AST import IntegerLiteral, FloatLiteral, IdentifierLiteral, BooleanLiteral
 
 from Environment import Environment
@@ -69,6 +69,9 @@ class Compiler:
 
             case NodeType.InfixExpression:
                 self.visit_infix_expression(node)
+            
+            case NodeType.CallExpression:
+                self.visit_call_expression(node)
 
     def visit_program(self, node: Program):
         func_name = "main"
@@ -185,6 +188,21 @@ class Compiler:
             ptr, _ = self.env.lookup(name)
             self.builder.store(value, ptr)
 
+    def visit_call_expression(self, node: CallExpression):
+        name: str = node.function.value
+        params: list[Expression] = node.args
+
+        args = []
+        types = []
+        # TODO: IMPLEMENT PARAMS
+
+        match name:
+            case _:
+                func, ret_type = self.env.lookup(name)
+                ret = self.builder.call(func, args)
+        
+        return ret, ret_type
+
     def visit_infix_expression(self, node: InfixExpression):
         operator: str = node.operator
         left_value, left_type = self.resolve_value(node.left_node)
@@ -283,3 +301,5 @@ class Compiler:
             
             case NodeType.InfixExpression:
                 return self.visit_infix_expression(node)
+            case NodeType.CallExpression:
+                return self.visit_call_expression(node)

@@ -7,6 +7,7 @@ target datalayout = ""
 define i32 @"main"()
 {
 main_entry:
+  %".2" = call i32 @"test"()
   ret i32 69
 }
 
@@ -47,4 +48,11 @@ func_entry.else.else.else:
   br label %"func_entry.else.else.endif"
 func_entry.else.else.endif:
   br label %"func_entry.else.endif"
+}
+
+define i32 @"test"()
+{
+test_entry:
+  %".2" = call i32 @"func"()
+  ret i32 %".2"
 }
