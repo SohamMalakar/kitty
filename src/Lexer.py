@@ -95,6 +95,61 @@ class Lexer:
         
         return Token(TokenType.MINUS, literal, pos_start=start_pos)
 
+    def make_equal_or_equal_equal(self):
+        literal = self.current_char
+        start_pos = self.pos.copy()
+        self.advance()
+
+        if self.current_char == "=":
+            literal += self.current_char
+            self.advance()
+            return Token(TokenType.EQ_EQ, literal, start_pos, self.pos)
+        
+        return Token(TokenType.EQ, literal, pos_start=start_pos)
+
+    def make_greater_or_greater_equal(self):
+        literal = self.current_char
+        start_pos = self.pos.copy()
+        self.advance()
+
+        if self.current_char == "=":
+            literal += self.current_char
+            self.advance()
+            return Token(TokenType.GT_EQ, literal, start_pos, self.pos)
+        
+        return Token(TokenType.GT, literal, pos_start=start_pos)
+
+    def make_lesser_or_lesser_equal(self):
+        literal = self.current_char
+        start_pos = self.pos.copy()
+        self.advance()
+
+        if self.current_char == "=":
+            literal += self.current_char
+            self.advance()
+            return Token(TokenType.LT_EQ, literal, start_pos, self.pos)
+        
+        return Token(TokenType.LT, literal, pos_start=start_pos)
+
+    def make_not_equal(self):
+        literal = self.current_char
+        start_pos = self.pos.copy()
+        self.advance()
+
+        if self.current_char == "=":
+            literal += self.current_char
+            self.advance()
+            return Token(TokenType.NOT_EQ, literal, start_pos, self.pos)
+        
+        self.error_handler.add_error(
+            start_pos, 
+            self.pos, 
+            "Lexical error",
+            "Invalid token: '!' must be followed by '='"
+        )
+
+        return Token(TokenType.ILLEGAL, literal, start_pos, self.pos)
+
     def make_tokens(self):
         tokens = []
 
@@ -142,8 +197,9 @@ class Lexer:
                 tokens.append(Token(TokenType.POW, literal=self.current_char, pos_start=self.pos))
                 self.advance()
             elif self.current_char == "=":
-                tokens.append(Token(TokenType.EQ, literal=self.current_char, pos_start=self.pos))
-                self.advance()
+                tokens.append(self.make_equal_or_equal_equal())
+                # tokens.append(Token(TokenType.EQ, literal=self.current_char, pos_start=self.pos))
+                # self.advance()
             elif self.current_char == ":":
                 tokens.append(Token(TokenType.COLON, literal=self.current_char, pos_start=self.pos))
                 self.advance()
@@ -156,7 +212,12 @@ class Lexer:
             elif self.current_char == ";":
                 tokens.append(Token(TokenType.SEMICOLON, literal=self.current_char, pos_start=self.pos))
                 self.advance()
-
+            elif self.current_char == ">":
+                tokens.append(self.make_greater_or_greater_equal())
+            elif self.current_char == "<":
+                tokens.append(self.make_lesser_or_lesser_equal())
+            elif self.current_char == "!":
+                tokens.append(self.make_not_equal())
             else:
                 # Potential error
                 tokens.append(Token(TokenType.ILLEGAL, literal=self.current_char, pos_start=self.pos))

@@ -7,11 +7,13 @@ class NodeType(Enum):
     FunctionStatement = "FunctionStatement"
     ReturnStatement = "ReturnStatement"
     AssignStatement = "AssignStatement"
+    IfStatement = "IfStatement"
     VarStatement = "VarStatement"
     InfixExpression = "InfixExpression"
     IntegerLiteral = "IntegerLiteral"
     FloatLiteral = "FloatLiteral"
     IdentifierLiteral = "IdentifierLiteral"
+    BooleanLiteral = "BooleanLiteral"
 
 
 class Node:
@@ -72,6 +74,83 @@ class AssignStatement(Statement):
             "ident": self.ident.json(),
             "right_value": self.right_value.json()
         }
+
+
+class IfStatement(Statement):
+    def __init__(self, condition: Expression = None, body: list = None, else_body: list = None):
+        self.condition = condition
+        self.body = body or []
+        self.else_body = else_body or []
+    
+    def type(self):
+        return NodeType.IfStatement
+    
+    def json(self):
+        return {
+            "type": self.type().value,
+            "condition": self.condition.json(),
+            "body": [stmt.json() for stmt in self.body],
+            "else_body": [stmt.json() for stmt in self.else_body]
+        }
+
+# Nice implementation but wont work
+# class IfStatement(Statement):
+#     def __init__(self, condition: Expression = None, body: list = None, elif_conditions: list = None, 
+#                  elif_bodies: list = None, else_body: list = None):
+#         self.condition = condition
+#         self.body = body or []
+#         self.elif_conditions = elif_conditions or []
+#         self.elif_bodies = elif_bodies or []
+#         self.else_body = else_body or []
+
+#     def type(self):
+#         return NodeType.IfStatement
+    
+#     def json(self):
+#         elif_conditions = []
+#         if self.elif_conditions:
+#             for i in range(len(self.elif_conditions)):
+#                 elif_conditions.append({
+#                     "condition": self.elif_conditions[i].json(),
+#                     "body": [stmt.json() for stmt in self.elif_bodies[i]]
+#                 })
+
+#         return {
+#             "type": self.type().value,
+#             "condition": self.condition.json(),
+#             "body": [stmt.json() for stmt in self.body],
+#             "elif_conditions": elif_conditions,
+#             # "else_body": [stmt.json() for stmt in self.else_body] if self.else_body else None
+#             "else_body": [stmt.json() for stmt in self.else_body] if self.else_body else []
+#         }
+
+
+# class IfStatement(Statement):
+#     def __init__(self, condition: Expression = None, body: list = None, elif_conditions: list = None, elif_bodies: list = None, else_body: list = None):
+#         self.condition = condition
+#         self.body = body or []
+#         self.elif_conditions = elif_conditions or []
+#         self.elif_bodies = elif_bodies or []
+#         self.else_body = else_body or []
+
+#     def type(self):
+#         return NodeType.IfStatement
+    
+#     def json(self):
+#         elif_conditions = []
+#         for i in range(len(self.elif_conditions)):
+#             elif_conditions.append({
+#                 "condition": self.elif_conditions[i].json(),
+#                 "body": [stmt.json() for stmt in self.elif_bodies[i]]
+#             })
+
+#         return {
+#             "type": self.type().value,
+#             "condition": self.condition.json(),
+#             "body": [stmt.json() for stmt in self.body],
+#             "elif_conditions": elif_conditions,
+#             "else_body": [stmt.json() for stmt in self.else_body] if self.else_body else None
+#         }
 
 
 class FunctionStatement(Statement):
@@ -177,6 +256,19 @@ class IdentifierLiteral(Expression):
     
     def type(self):
         return NodeType.IdentifierLiteral
+    
+    def json(self):
+        return {
+            "type": self.type().value,
+            "value": self.value
+        }
+
+class BooleanLiteral(Expression):
+    def __init__(self, value):
+        self.value = value
+    
+    def type(self):
+        return NodeType.BooleanLiteral
     
     def json(self):
         return {

@@ -16,6 +16,11 @@ class TokenType(Enum):
     EQ = "EQ"
     LPAREN = "LPAREN"
     RPAREN = "RPAREN"
+    IF = "IF"
+    ELIF = "ELIF"
+    ELSE = "ELSE"
+    TRUE = "TRUE"
+    FALSE = "FALSE"
     VAR = "VAR"
     TYPE = "TYPE"
     COLON = "COLON"
@@ -26,6 +31,12 @@ class TokenType(Enum):
     SEMICOLON = "SEMICOLON"
     EOF = "EOF"
     ILLEGAL = "ILLEGAL"
+    GT = ">"
+    LT = "<"
+    GT_EQ = ">="
+    LT_EQ = "<="
+    NOT_EQ = "!="
+    EQ_EQ = "=="
 
 
 class Token:
@@ -46,6 +57,11 @@ class Token:
 
 
 KEYWORDS = {
+    "if": TokenType.IF,
+    "elif": TokenType.ELIF,
+    "else": TokenType.ELSE,
+    "true": TokenType.TRUE,
+    "false": TokenType.FALSE,
     "var": TokenType.VAR,
     "def": TokenType.DEF,
     "end": TokenType.END,

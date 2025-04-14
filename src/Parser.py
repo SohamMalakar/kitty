@@ -4,13 +4,15 @@ from Token import Token, TokenType
 from Error import ErrorHandler
 
 from AST import Statement, Expression, Program
-from AST import ExpressionStatement, VarStatement, FunctionStatement, ReturnStatement, AssignStatement
+from AST import ExpressionStatement, VarStatement, FunctionStatement, ReturnStatement, AssignStatement, IfStatement
 from AST import InfixExpression
-from AST import IntegerLiteral, FloatLiteral, IdentifierLiteral
+from AST import IntegerLiteral, FloatLiteral, IdentifierLiteral, BooleanLiteral
 
 
 class PrecedenceType(Enum):
     LOWEST = 0
+    EQUALS = auto()
+    LESSGREATER = auto()
     SUM = auto()
     PRODUCT = auto()
     EXPONENT = auto()
@@ -22,7 +24,13 @@ PRECEDENCES = {
     TokenType.ASTERISK: PrecedenceType.PRODUCT,
     TokenType.SLASH: PrecedenceType.PRODUCT,
     TokenType.MODULUS: PrecedenceType.PRODUCT,
-    TokenType.POW: PrecedenceType.EXPONENT
+    TokenType.POW: PrecedenceType.EXPONENT,
+    TokenType.EQ_EQ: PrecedenceType.EQUALS,
+    TokenType.NOT_EQ: PrecedenceType.EQUALS,
+    TokenType.LT: PrecedenceType.LESSGREATER,
+    TokenType.GT: PrecedenceType.LESSGREATER,
+    TokenType.LT_EQ: PrecedenceType.LESSGREATER,
+    TokenType.GT_EQ: PrecedenceType.LESSGREATER,
 }
 
 
@@ -39,7 +47,9 @@ class Parser:
             TokenType.IDENT: self.parse_indentifier,
             TokenType.INT: self.parse_int_literal,
             TokenType.FLOAT: self.parse_float_literal,
-            TokenType.LPAREN: self.parse_grouped_expression
+            TokenType.LPAREN: self.parse_grouped_expression,
+            TokenType.TRUE: self.parse_boolean,
+            TokenType.FALSE: self.parse_boolean
         }
 
         # Register infix parsing functions
@@ -49,7 +59,13 @@ class Parser:
             TokenType.ASTERISK: self.parse_infix_expression,
             TokenType.SLASH: self.parse_infix_expression,
             TokenType.MODULUS: self.parse_infix_expression,
-            TokenType.POW: self.parse_infix_expression
+            TokenType.POW: self.parse_infix_expression,
+            TokenType.EQ_EQ: self.parse_infix_expression,
+            TokenType.NOT_EQ: self.parse_infix_expression,
+            TokenType.LT: self.parse_infix_expression,
+            TokenType.GT: self.parse_infix_expression,
+            TokenType.LT_EQ: self.parse_infix_expression,
+            TokenType.GT_EQ: self.parse_infix_expression
         }
 
         self.advance()
@@ -79,7 +95,7 @@ class Parser:
         token = self.peek_token()
         return PRECEDENCES.get(token.type, PrecedenceType.LOWEST) if token else PrecedenceType.LOWEST
 
-    def expect_token(self, token_type, error_message, look_current=False, error_at_current=False):
+    def expect_token(self, token_type, error_message, do_advance=True, look_current=False, error_at_current=False):
         """Check if next token is of expected type and advance, otherwise handle error"""
 
         if look_current:
@@ -88,7 +104,8 @@ class Parser:
         token = self.current_token if look_current else self.peek_token()
 
         if token and token.type == token_type:
-            self.advance()
+            if do_advance:
+                self.advance()
             return True
         else:
             token = self.current_token if error_at_current else self.peek_token()
@@ -154,6 +171,8 @@ class Parser:
                 return self.parse_function_statement()
             case TokenType.RETURN:
                 return self.parse_return_statement()
+            case TokenType.IF:
+                return self.parse_if_statement()
             case _:
                 return self.parse_expression_statement()
     
@@ -206,7 +225,116 @@ class Parser:
             return None
 
         return stmt
-    
+
+    def parse_if_statement(self):
+        stmt = IfStatement()
+
+        self.advance()
+
+        stmt.condition = self.parse_expression(PrecedenceType.LOWEST)
+
+        if not self.expect_token(TokenType.COLON, "Expected colon ':' after condition"):
+            return None
+        
+        self.advance()
+
+        while self.current_token and self.current_token.type not in [TokenType.ELIF, TokenType.ELSE, TokenType.END]:
+            try:
+                stmt.body.append(self.parse_statement())
+                self.advance()
+            except Exception as e:
+                self.exceptions.append(f"Synchronizing after error: {e}")
+        
+        if self.current_token and self.current_token.type == TokenType.ELIF:
+            stmt.else_body.append(self.parse_if_statement())
+        elif self.current_token and self.current_token.type == TokenType.ELSE:
+            if not self.expect_token(TokenType.COLON, "Expected colon ':' after condition"):
+                return None
+            
+            self.advance()
+
+            while self.current_token and self.current_token.type != TokenType.END:
+                try:
+                    stmt.else_body.append(self.parse_statement())
+                    self.advance()
+                except Exception as e:
+                    self.exceptions.append(f"Synchronizing after error: {e}")
+        
+        return stmt
+
+    # def parse_if_statement(self):
+    #     stmt = IfStatement()
+
+    #     self.advance()
+
+    #     stmt.condition = self.parse_expression(PrecedenceType.LOWEST)
+
+    #     if not self.expect_token(TokenType.COLON, "Expected colon ':' after condition"):
+    #         return None
+        
+    #     self.advance()
+
+    #     # Parse statements
+    #     while self.current_token and self.current_token.type not in [TokenType.ELIF, TokenType.ELSE, TokenType.END]:
+    #         try:
+    #             stmt.body.append(self.parse_statement())
+    #             self.advance()
+    #         except Exception as e:
+    #             self.exceptions.append(f"Synchronizing after error: {e}")
+        
+    #     # Parse elif statements
+    #     elif_conditions = []
+    #     elif_bodies = []
+        
+    #     while self.current_token and self.current_token.type == TokenType.ELIF:
+    #         self.advance()
+
+    #         elif_condition = self.parse_expression(PrecedenceType.LOWEST)
+
+    #         if not self.expect_token(TokenType.COLON, "Expected colon ':' after elif condition"):
+    #             return None
+            
+    #         self.advance()
+
+    #         elif_body = []
+
+    #         while self.current_token and self.current_token.type not in [TokenType.ELIF, TokenType.ELSE, TokenType.END]:
+    #             try:
+    #                 elif_body.append(self.parse_statement())
+    #                 self.advance()
+    #             except Exception as e:
+    #                 self.exceptions.append(f"Synchronizing after error: {e}")
+            
+    #         elif_conditions.append(elif_condition)
+    #         elif_bodies.append(elif_body)
+        
+    #     stmt.elif_conditions = elif_conditions
+    #     stmt.elif_bodies = elif_bodies
+
+    #     # Parse else statement
+    #     if self.current_token and self.current_token.type == TokenType.ELSE:
+    #         # self.advance()
+
+    #         if not self.expect_token(TokenType.COLON, "Expected colon ':' after else"):
+    #             return None
+            
+    #         self.advance()
+
+    #         stmt.else_body = []
+
+    #         while self.current_token and self.current_token.type != TokenType.END:
+    #             try:
+    #                 stmt.else_body.append(self.parse_statement())
+    #                 self.advance()
+    #             except Exception as e:
+    #                 self.exceptions.append(f"Synchronizing after error: {e}")
+        
+    #     # Parse end statement
+    #     if not self.expect_token(TokenType.END, "Expected end keyword after a block", look_current=True, do_advance=False):
+    #         return None
+
+    #     return stmt
+
     def parse_function_statement(self):
         func = FunctionStatement()
 
@@ -254,7 +382,7 @@ class Parser:
             except Exception as e:
                 self.exceptions.append(f"Synchronizing after error: {e}")
 
-        if not self.expect_token(TokenType.END, "Expected end keyword after a block", look_current=True):
+        if not self.expect_token(TokenType.END, "Expected end keyword after a block", look_current=True, do_advance=False):
             return None
 
         return func
@@ -337,7 +465,7 @@ class Parser:
         if not self.expect_token(TokenType.RPAREN, "Expected closing parenthesis ')' after expression", error_at_current=True):
             return None
 
-        self.advance()  # Skip the closing parenthesis
+        # self.advance()  # Skip the closing parenthesis
         return expr
 
     def parse_indentifier(self):
@@ -350,3 +478,7 @@ class Parser:
     def parse_float_literal(self):
         """Parse a float literal"""
         return FloatLiteral(self.current_token.literal)
+    
+    def parse_boolean(self):
+        """Parse a boolean literal"""
+        return BooleanLiteral(self.current_token.literal == "true")

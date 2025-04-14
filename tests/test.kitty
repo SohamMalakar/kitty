@@ -1,6 +1,19 @@
-def add() -> int:
-    var a: int = 2;
-    var b: int = 8;
-    a = a * b;
-    return a + b;
+
+def func() -> int:
+
+    var a: int = 0;
+
+    if 1 > 2:
+        9.7 + 0.5;
+        a = 10 + 7 + 9;
+    elif 2 > 3:
+        a = 0;
+    elif 3 > 2:
+        a = (5 + 5) * 9;
+    else:
+        10 / 2;
+    end
+
+    return a;
+
 end
