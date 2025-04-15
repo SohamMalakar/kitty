@@ -1,20 +1,5 @@
-def func() -> int:
-    var a: int = 0;
-    if 1 > 2:
-        9.7 + 0.5;
-        a = 10 + 7 + 9;
-    elif 2 > 3:
-        a = 0;
-    elif 3 > 2:
-        a = (5 + 5) * 9;
-    else:
-        10 / 2;
-    end
-    return a;
+def add(a: int, b: int) -> int:
+    return a + b;
 end
 
-def test() -> int:
-    return func();
-end
-
-test();
+add(1, 2);

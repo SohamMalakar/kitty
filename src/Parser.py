@@ -7,7 +7,7 @@ from AST import Statement, Expression, Program
 from AST import ExpressionStatement, VarStatement, FunctionStatement, ReturnStatement, AssignStatement, IfStatement
 from AST import InfixExpression, CallExpression
 from AST import IntegerLiteral, FloatLiteral, IdentifierLiteral, BooleanLiteral
-
+from AST import FunctionParameter
 
 class PrecedenceType(Enum):
     LOWEST = 0
@@ -350,10 +350,10 @@ class Parser:
         if not self.expect_token(TokenType.LPAREN, "Expected left parenthesis '(", error_at_current=True):
             return None
         
-        func.parameters = [] # TODO: implement
+        func.parameters = self.parse_function_parameters()
 
-        if not self.expect_token(TokenType.RPAREN, "Expected right parenthesis ')'", error_at_current=True):
-            return None
+        # if not self.expect_token(TokenType.RPAREN, "Expected right parenthesis ')'", error_at_current=True):
+        #     return None
 
         if not self.expect_token(TokenType.ARROW, "Expected an arrow '->'", error_at_current=True):
             return None
@@ -389,6 +389,52 @@ class Parser:
             return None
 
         return func
+    
+    def parse_function_parameters(self) -> list[FunctionParameter]:
+        params: list[FunctionParameter] = []
+
+        if self.peek_token() and self.peek_token().type == TokenType.RPAREN:
+            self.advance()
+            return params
+        
+        # self.advance()
+        if not self.expect_token(TokenType.IDENT, "Expected an identifier after '('", error_at_current=True):
+            return None
+
+        first_param: FunctionParameter = FunctionParameter(name=self.current_token.literal)
+
+        if not self.expect_token(TokenType.COLON, "Expected colon ':' after identifier", error_at_current=True):
+            return None
+        
+        # self.advance()
+        if not self.expect_token(TokenType.TYPE, "Expected type after ':'", error_at_current=True):
+            return None
+
+        first_param.value_type = self.current_token.literal
+        params.append(first_param)
+
+        while self.peek_token() and self.peek_token().type == TokenType.COMMA:
+            self.advance()
+
+            if not self.expect_token(TokenType.IDENT, "Expected identifier after ','", error_at_current=True):
+                return None
+            
+            param = FunctionParameter(name=self.current_token.literal)
+
+            if not self.expect_token(TokenType.COLON, "Expected colon ':' after identifier", error_at_current=True):
+                return None
+            
+            # self.advance()
+            if not self.expect_token(TokenType.TYPE, "Expected type after ':'", error_at_current=True):
+                return None
+
+            param.value_type = self.current_token.literal
+            params.append(param)
+
+        if not self.expect_token(TokenType.RPAREN, "Expected right parenthesis ')'", error_at_current=True):
+            return None
+        
+        return params
 
     def parse_return_statement(self):
         stmt = ReturnStatement()
@@ -473,12 +519,34 @@ class Parser:
     
     def parse_call_expression(self, function: Expression):
         expr = CallExpression(function=function)
-        expr.args = [] # TODO: implement this
+        expr.args = self.parse_expression_list(TokenType.RPAREN)
         
-        if not self.expect_token(TokenType.RPAREN, "Expected closing parenthesis ')' after function call", error_at_current=True):
-            return None
+        # if not self.expect_token(TokenType.RPAREN, "Expected closing parenthesis ')' after function call", error_at_current=True):
+        #     return None
         
         return expr
+
+    def parse_expression_list(self, end_token_type) -> list[Expression]:
+        """Parse a list of expressions separated by commas"""
+        args: list[Expression] = []
+
+        if self.peek_token() and self.peek_token().type == end_token_type:
+            self.advance()
+            return args
+
+        self.advance()
+
+        args.append(self.parse_expression(PrecedenceType.LOWEST))
+
+        while self.peek_token() and self.peek_token().type == TokenType.COMMA:
+            self.advance()
+            self.advance()
+            args.append(self.parse_expression(PrecedenceType.LOWEST))
+
+        if not self.expect_token(end_token_type, f"Expected closing parenthesis '{end_token_type}' after function call", error_at_current=True):
+            return None
+        
+        return args
 
     def parse_indentifier(self):
         return IdentifierLiteral(self.current_token.literal)

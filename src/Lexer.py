@@ -209,6 +209,9 @@ class Lexer:
             elif self.current_char == ")":
                 tokens.append(Token(TokenType.RPAREN, literal=self.current_char, pos_start=self.pos))
                 self.advance()
+            elif self.current_char == ",":
+                tokens.append(Token(TokenType.COMMA, literal=self.current_char, pos_start=self.pos))
+                self.advance()
             elif self.current_char == ";":
                 tokens.append(Token(TokenType.SEMICOLON, literal=self.current_char, pos_start=self.pos))
                 self.advance()

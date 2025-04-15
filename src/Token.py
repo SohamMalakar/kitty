@@ -28,6 +28,7 @@ class TokenType(Enum):
     RETURN = "RETURN"
     ARROW = "ARROW"
     END = "END"
+    COMMA = "COMMA"
     SEMICOLON = "SEMICOLON"
     EOF = "EOF"
     ILLEGAL = "ILLEGAL"

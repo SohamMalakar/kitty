@@ -15,6 +15,7 @@ class NodeType(Enum):
     FloatLiteral = "FloatLiteral"
     IdentifierLiteral = "IdentifierLiteral"
     BooleanLiteral = "BooleanLiteral"
+    FunctionParameter = "FunctionParameter"
 
 
 class Node:
@@ -44,6 +45,22 @@ class Program(Node):
         return {
             "type": self.type().value,
             "statements": [{stmt.type().value: stmt.json()} for stmt in self.statements]
+        }
+
+
+class FunctionParameter(Expression):
+    def __init__(self, name: str, value_type: str = None):
+        self.name = name
+        self.value_type = value_type
+
+    def type(self):
+        return NodeType.FunctionParameter
+
+    def json(self):
+        return {
+            "type": self.type().value,
+            "name": self.name,
+            "value_type": self.value_type
         }
 
 
@@ -155,7 +172,7 @@ class IfStatement(Statement):
 
 
 class FunctionStatement(Statement):
-    def __init__(self, parameters = None, body = None, name = None, return_type: str = None):
+    def __init__(self, parameters: list[FunctionParameter] = None, body = None, name = None, return_type: str = None):
         self.parameters = parameters or []
         self.body = body or []
         self.name = name

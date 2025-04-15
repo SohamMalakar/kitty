@@ -7,52 +7,19 @@ target datalayout = ""
 define i32 @"main"()
 {
 main_entry:
-  %".2" = call i32 @"test"()
+  %".2" = call i32 @"add"(i32 1, i32 2)
   ret i32 69
 }
 
-define i32 @"func"()
+define i32 @"add"(i32 %".1", i32 %".2")
 {
-func_entry:
-  %".2" = alloca i32
-  store i32 0, i32* %".2"
-  %".4" = icmp sgt i32 1, 2
-  br i1 %".4", label %"func_entry.if", label %"func_entry.else"
-func_entry.if:
-  %".6" = fadd float 0x4023666660000000, 0x3fe0000000000000
-  %".7" = add i32 10, 7
-  %".8" = add i32 %".7", 9
-  store i32 %".8", i32* %".2"
-  br label %"func_entry.endif"
-func_entry.else:
-  %".11" = icmp sgt i32 2, 3
-  br i1 %".11", label %"func_entry.else.if", label %"func_entry.else.else"
-func_entry.endif:
-  %".25" = load i32, i32* %".2"
-  ret i32 %".25"
-func_entry.else.if:
-  store i32 0, i32* %".2"
-  br label %"func_entry.else.endif"
-func_entry.else.else:
-  %".15" = icmp sgt i32 3, 2
-  br i1 %".15", label %"func_entry.else.else.if", label %"func_entry.else.else.else"
-func_entry.else.endif:
-  br label %"func_entry.endif"
-func_entry.else.else.if:
-  %".17" = add i32 5, 5
-  %".18" = mul i32 %".17", 9
-  store i32 %".18", i32* %".2"
-  br label %"func_entry.else.else.endif"
-func_entry.else.else.else:
-  %".21" = sdiv i32 10, 2
-  br label %"func_entry.else.else.endif"
-func_entry.else.else.endif:
-  br label %"func_entry.else.endif"
-}
-
-define i32 @"test"()
-{
-test_entry:
-  %".2" = call i32 @"func"()
-  ret i32 %".2"
+add_entry:
+  %".4" = alloca i32
+  store i32 %".1", i32* %".4"
+  %".6" = alloca i32
+  store i32 %".2", i32* %".6"
+  %".8" = load i32, i32* %".4"
+  %".9" = load i32, i32* %".6"
+  %".10" = add i32 %".8", %".9"
+  ret i32 %".10"
 }
