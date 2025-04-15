@@ -1,4 +1,3 @@
-
 from llvmlite import ir
 
 class Environment:

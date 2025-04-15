@@ -2,39 +2,57 @@ from enum import Enum
 
 
 class NodeType(Enum):
+    """Enumeration of all possible node types in the AST."""
     Program = "Program"
+
+    # Statements
     ExpressionStatement = "ExpressionStatement"
+    VarStatement = "VarStatement"
     FunctionStatement = "FunctionStatement"
     ReturnStatement = "ReturnStatement"
     AssignStatement = "AssignStatement"
     IfStatement = "IfStatement"
-    VarStatement = "VarStatement"
+
+    # Expressions
     InfixExpression = "InfixExpression"
     CallExpression = "CallExpression"
+
+    # Literals
     IntegerLiteral = "IntegerLiteral"
     FloatLiteral = "FloatLiteral"
     IdentifierLiteral = "IdentifierLiteral"
     BooleanLiteral = "BooleanLiteral"
+    StringLiteral = "StringLiteral"
+
+    # Helper
     FunctionParameter = "FunctionParameter"
 
 
 class Node:
+    """Base abstract class for all AST nodes."""
+    
     def type(self):
+        """Return the type of this node."""
         pass
 
     def json(self):
+        """Convert the node to a JSON-serializable dictionary."""
         pass
 
 
 class Statement(Node):
+    """Base class for all statement nodes."""
     pass
 
 
 class Expression(Node):
+    """Base class for all expression nodes."""
     pass
 
 
 class Program(Node):
+    """Root node of the AST representing an entire program."""
+    
     def __init__(self):
         self.statements = []
     
@@ -49,6 +67,8 @@ class Program(Node):
 
 
 class FunctionParameter(Expression):
+    """Represents a parameter in a function definition."""
+    
     def __init__(self, name: str, value_type: str = None):
         self.name = name
         self.value_type = value_type
@@ -65,6 +85,8 @@ class FunctionParameter(Expression):
 
 
 class ExpressionStatement(Statement):
+    """A statement consisting of a single expression."""
+    
     def __init__(self, expr: Expression = None):
         self.expr = expr
 
@@ -79,6 +101,8 @@ class ExpressionStatement(Statement):
 
 
 class AssignStatement(Statement):
+    """An assignment statement (e.g., x = value)."""
+    
     def __init__(self, ident: Expression = None, right_value: Expression = None):
         self.ident = ident
         self.right_value = right_value
@@ -95,6 +119,8 @@ class AssignStatement(Statement):
 
 
 class IfStatement(Statement):
+    """A conditional statement with optional else clause."""
+    
     def __init__(self, condition: Expression = None, body: list = None, else_body: list = None):
         self.condition = condition
         self.body = body or []
@@ -111,68 +137,12 @@ class IfStatement(Statement):
             "else_body": [stmt.json() for stmt in self.else_body]
         }
 
-# Nice implementation but wont work
-# class IfStatement(Statement):
-#     def __init__(self, condition: Expression = None, body: list = None, elif_conditions: list = None, 
-#                  elif_bodies: list = None, else_body: list = None):
-#         self.condition = condition
-#         self.body = body or []
-#         self.elif_conditions = elif_conditions or []
-#         self.elif_bodies = elif_bodies or []
-#         self.else_body = else_body or []
-
-#     def type(self):
-#         return NodeType.IfStatement
-    
-#     def json(self):
-#         elif_conditions = []
-#         if self.elif_conditions:
-#             for i in range(len(self.elif_conditions)):
-#                 elif_conditions.append({
-#                     "condition": self.elif_conditions[i].json(),
-#                     "body": [stmt.json() for stmt in self.elif_bodies[i]]
-#                 })
-
-#         return {
-#             "type": self.type().value,
-#             "condition": self.condition.json(),
-#             "body": [stmt.json() for stmt in self.body],
-#             "elif_conditions": elif_conditions,
-#             # "else_body": [stmt.json() for stmt in self.else_body] if self.else_body else None
-#             "else_body": [stmt.json() for stmt in self.else_body] if self.else_body else []
-#         }
-
-
-# class IfStatement(Statement):
-#     def __init__(self, condition: Expression = None, body: list = None, elif_conditions: list = None, elif_bodies: list = None, else_body: list = None):
-#         self.condition = condition
-#         self.body = body or []
-#         self.elif_conditions = elif_conditions or []
-#         self.elif_bodies = elif_bodies or []
-#         self.else_body = else_body or []
-
-#     def type(self):
-#         return NodeType.IfStatement
-    
-#     def json(self):
-#         elif_conditions = []
-#         for i in range(len(self.elif_conditions)):
-#             elif_conditions.append({
-#                 "condition": self.elif_conditions[i].json(),
-#                 "body": [stmt.json() for stmt in self.elif_bodies[i]]
-#             })
-
-#         return {
-#             "type": self.type().value,
-#             "condition": self.condition.json(),
-#             "body": [stmt.json() for stmt in self.body],
-#             "elif_conditions": elif_conditions,
-#             "else_body": [stmt.json() for stmt in self.else_body] if self.else_body else None
-#         }
-
 
 class FunctionStatement(Statement):
-    def __init__(self, parameters: list[FunctionParameter] = None, body = None, name = None, return_type: str = None):
+    """A function definition statement."""
+    
+    def __init__(self, parameters: list[FunctionParameter] = None, body=None, 
+                name=None, return_type: str = None):
         self.parameters = parameters or []
         self.body = body or []
         self.name = name
@@ -192,6 +162,8 @@ class FunctionStatement(Statement):
 
 
 class ReturnStatement(Statement):
+    """A return statement within a function."""
+    
     def __init__(self, return_value: Expression = None):
         self.return_value = return_value
     
@@ -206,6 +178,8 @@ class ReturnStatement(Statement):
 
 
 class VarStatement(Statement):
+    """A variable declaration statement."""
+    
     def __init__(self, name: Expression = None, value: Expression = None, value_type: str = None):
         self.name = name
         self.value = value
@@ -224,10 +198,12 @@ class VarStatement(Statement):
 
 
 class InfixExpression(Expression):
+    """An expression with an operator between two operands (e.g., a + b)."""
+    
     def __init__(self, left_node: Expression, operator: str, right_node: Expression = None):
-        self.left_node: Expression = left_node
-        self.operator: str = operator
-        self.right_node: Expression = right_node
+        self.left_node = left_node
+        self.operator = operator
+        self.right_node = right_node
 
     def type(self):
         return NodeType.InfixExpression
@@ -242,8 +218,10 @@ class InfixExpression(Expression):
 
 
 class CallExpression(Expression):
+    """A function call expression."""
+    
     def __init__(self, function: Expression = None, args: list[Expression] = None):
-        self.function = function # IdentifierLiteral
+        self.function = function  # Expected to be an IdentifierLiteral
         self.args = args or []
 
     def type(self):
@@ -258,6 +236,8 @@ class CallExpression(Expression):
 
 
 class IntegerLiteral(Expression):
+    """An integer literal value."""
+    
     def __init__(self, value):
         self.value = value
     
@@ -272,6 +252,8 @@ class IntegerLiteral(Expression):
 
 
 class FloatLiteral(Expression):
+    """A floating-point literal value."""
+    
     def __init__(self, value):
         self.value = value
     
@@ -284,7 +266,10 @@ class FloatLiteral(Expression):
             "value": self.value
         }
 
+
 class IdentifierLiteral(Expression):
+    """An identifier (variable or function name)."""
+    
     def __init__(self, value):
         self.value = value
     
@@ -297,12 +282,31 @@ class IdentifierLiteral(Expression):
             "value": self.value
         }
 
+
 class BooleanLiteral(Expression):
+    """A boolean literal (True or False)."""
+    
     def __init__(self, value):
         self.value = value
     
     def type(self):
         return NodeType.BooleanLiteral
+    
+    def json(self):
+        return {
+            "type": self.type().value,
+            "value": self.value
+        }
+
+
+class StringLiteral(Expression):
+    """A string literal value."""
+    
+    def __init__(self, value):
+        self.value = value
+    
+    def type(self):
+        return NodeType.StringLiteral
     
     def json(self):
         return {
