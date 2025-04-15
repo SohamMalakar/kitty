@@ -2,6 +2,7 @@ from llvmlite import ir
 
 from AST import Node, NodeType, Program, Expression
 from AST import ExpressionStatement, VarStatement, FunctionStatement, ReturnStatement, AssignStatement, IfStatement
+from AST import WhileStatement, BreakStatement, ContinueStatement
 from AST import InfixExpression, CallExpression
 from AST import IntegerLiteral, FloatLiteral, IdentifierLiteral, BooleanLiteral, StringLiteral
 from AST import FunctionParameter
@@ -28,6 +29,9 @@ class Compiler:
         self.counter: int = 0
 
         self.initialize_builtins()
+
+        self.breakpoints: list[ir.Block] = []
+        self.continues: list[ir.Block] = []
     
     def increment_counter(self) -> int:
         """Generate a unique counter value for naming."""
@@ -103,6 +107,12 @@ class Compiler:
                 self.visit_assign_statement(node)
             case NodeType.IfStatement:
                 self.visit_if_statement(node)
+            case NodeType.WhileStatement:
+                self.visit_while_statement(node)
+            case NodeType.BreakStatement:
+                self.visit_break_statement(node)
+            case NodeType.ContinueStatement:
+                self.visit_continue_statement(node)
             case NodeType.InfixExpression:
                 self.visit_infix_expression(node)
             case NodeType.CallExpression:
@@ -148,6 +158,48 @@ class Compiler:
                 with otherwise:
                     for stmt in node.else_body:
                         self.compile(stmt)
+    
+    def visit_while_statement(self, node: WhileStatement):
+        """Compile a while statement."""
+        condition: Expression = node.condition
+        body: list = node.body
+
+        test, _ = self.resolve_value(condition)
+
+        while_loop_entry = self.builder.append_basic_block(f"while_loop_entry_{self.increment_counter()}") 
+        while_loop_otherwise = self.builder.append_basic_block(f"while_loop_otherwise_{self.counter}")
+
+        self.breakpoints.append(while_loop_otherwise)
+        self.continues.append(while_loop_entry)
+
+        self.builder.cbranch(test, while_loop_entry, while_loop_otherwise)
+
+        self.builder.position_at_start(while_loop_entry)
+
+        for stmt in body:
+            self.compile(stmt)
+
+        test, _ = self.resolve_value(condition)
+
+        self.builder.cbranch(test, while_loop_entry, while_loop_otherwise)
+        self.builder.position_at_start(while_loop_otherwise)
+
+        self.breakpoints.pop()
+        self.continues.pop()
+
+    def visit_break_statement(self, node: BreakStatement):
+        """Compile a break statement."""
+        if self.breakpoints:
+            self.builder.branch(self.breakpoints[-1])
+        else:
+            raise RuntimeError("Break statement outside of loop.")
+    
+    def visit_continue_statement(self, node: ContinueStatement):
+        """Compile a continue statement."""
+        if self.continues:
+            self.builder.branch(self.continues[-1])
+        else:
+            raise RuntimeError("Continue statement outside of loop.")
 
     def visit_var_statement(self, node: VarStatement):
         """Compile a variable declaration statement."""

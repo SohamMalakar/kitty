@@ -8,6 +8,7 @@ from AST import (
     Statement, Expression, Program,
     ExpressionStatement, VarStatement, FunctionStatement,
     ReturnStatement, AssignStatement, IfStatement,
+    WhileStatement, BreakStatement, ContinueStatement,
     InfixExpression, CallExpression,
     IntegerLiteral, FloatLiteral, IdentifierLiteral,
     BooleanLiteral, StringLiteral, FunctionParameter
@@ -261,6 +262,12 @@ class Parser:
             return self.parse_return_statement()
         elif self.current_token.type == TokenType.IF:
             return self.parse_if_statement()
+        elif self.current_token.type == TokenType.WHILE:
+            return self.parse_while_statement()
+        elif self.current_token.type == TokenType.BREAK:
+            return self.parse_break_statement()
+        elif self.current_token.type == TokenType.CONTINUE:
+            return self.parse_continue_statement()
         else:
             return self.parse_expression_statement()
     
@@ -370,6 +377,67 @@ class Parser:
         if not self.expect_token(TokenType.END, "Expected 'end' after if block", look_current=True, do_advance=False):
             return None
             
+        return stmt
+    
+    def parse_while_statement(self) -> Optional[WhileStatement]:
+        """
+        Parse a while statement.
+        
+        Returns:
+            A WhileStatement AST node or None if parsing failed
+        """
+        condition: Expression = None
+        body: List[Statement] = []
+
+        self.advance()
+
+        condition = self.parse_expression(PrecedenceType.LOWEST)
+
+        if not self.expect_token(TokenType.COLON, "Expected colon ':' after condition"):
+            return None
+        
+        self.advance()
+
+        # Parse body statements
+        while self.current_token and self.current_token.type != TokenType.END:
+            try:
+                body.append(self.parse_statement())
+                self.advance()
+            except Exception as e:
+                self.exceptions.append(f"Synchronizing after error: {e}")
+        
+        # Verify end of while statement
+        if not self.expect_token(TokenType.END, "Expected 'end' after while block", look_current=True, do_advance=False):
+            return None
+        
+        return WhileStatement(condition=condition, body=body)
+
+    def parse_break_statement(self) -> Optional[BreakStatement]:
+        """
+        Parse a break statement.
+        
+        Returns:
+            A BreakStatement AST node or None if parsing failed
+        """
+        stmt = BreakStatement()
+        
+        if not self.expect_semicolon():
+            return None
+
+        return stmt
+
+    def parse_continue_statement(self) -> Optional[ContinueStatement]:
+        """
+        Parse a continue statement.
+        
+        Returns:
+            A ContinueStatement AST node or None if parsing failed
+        """
+        stmt = ContinueStatement()
+        
+        if not self.expect_semicolon():
+            return None
+
         return stmt
 
     def parse_function_statement(self) -> Optional[FunctionStatement]:

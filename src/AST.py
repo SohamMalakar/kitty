@@ -12,6 +12,9 @@ class NodeType(Enum):
     ReturnStatement = "ReturnStatement"
     AssignStatement = "AssignStatement"
     IfStatement = "IfStatement"
+    WhileStatement = "WhileStatement"
+    BreakStatement = "BreakStatement"
+    ContinueStatement = "ContinueStatement"
 
     # Expressions
     InfixExpression = "InfixExpression"
@@ -135,6 +138,52 @@ class IfStatement(Statement):
             "condition": self.condition.json(),
             "body": [stmt.json() for stmt in self.body],
             "else_body": [stmt.json() for stmt in self.else_body]
+        }
+
+
+class WhileStatement(Statement):
+    """A while loop statement."""
+    
+    def __init__(self, condition: Expression, body: list = None):
+        self.condition = condition
+        self.body = body if body is not None else []
+
+    def type(self):
+        return NodeType.WhileStatement
+    
+    def json(self):
+        return {
+            "type": self.type().value,
+            "condition": self.condition.json(),
+            "body": [stmt.json() for stmt in self.body]
+        }
+
+
+class BreakStatement(Statement):
+    """A break statement to exit a loop."""
+    def __init__(self):
+        pass
+    
+    def type(self):
+        return NodeType.BreakStatement
+    
+    def json(self):
+        return {
+            "type": self.type().value
+        }
+
+
+class ContinueStatement(Statement):
+    """A continue statement to exit a loop."""
+    def __init__(self):
+        pass
+    
+    def type(self):
+        return NodeType.ContinueStatement
+    
+    def json(self):
+        return {
+            "type": self.type().value
         }
 
 

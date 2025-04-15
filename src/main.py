@@ -169,7 +169,8 @@ def run_execution(module, lib_path):
         sys.exit(1)
 
     # Set up execution engine
-    target_machine = llvm.Target.from_default_triple().create_target_machine()
+    target = llvm.Target.from_default_triple()
+    target_machine = target.create_target_machine(opt=3)
     engine = llvm.create_mcjit_compiler(llvm_ir_parsed, target_machine)
 
     # Map external functions

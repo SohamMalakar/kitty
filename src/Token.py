@@ -16,13 +16,15 @@ class TokenType(Enum):
     BOOL = "BOOL"
     STRING = "STRING"
     
-    # Operators
+    # Arithmetic Operators
     PLUS = "PLUS"
     MINUS = "MINUS"
     ASTERISK = "ASTERISK"
     SLASH = "SLASH"
     POW = "POW"
     MODULUS = "MODULUS"
+
+    # Assignment Operators
     EQ = "EQ"
     
     # Delimiters
@@ -33,16 +35,21 @@ class TokenType(Enum):
     SEMICOLON = "SEMICOLON"
     
     # Keywords
+    VAR = "VAR"
+    DEF = "DEF"
+    RETURN = "RETURN"
     IF = "IF"
     ELIF = "ELIF"
     ELSE = "ELSE"
     TRUE = "TRUE"
     FALSE = "FALSE"
-    VAR = "VAR"
-    TYPE = "TYPE"
-    DEF = "DEF"
-    RETURN = "RETURN"
+    WHILE = "WHILE"
+    CONTINUE = "CONTINUE"
+    BREAK = "BREAK"
     END = "END"
+
+    # Typing
+    TYPE = "TYPE"
     
     # Special characters and operators
     ARROW = "ARROW"
@@ -98,15 +105,18 @@ class Token:
 
 # Dictionary mapping keyword strings to their corresponding token types
 KEYWORDS = {
+    "var": TokenType.VAR,
+    "def": TokenType.DEF,
+    "return": TokenType.RETURN,
     "if": TokenType.IF,
     "elif": TokenType.ELIF,
     "else": TokenType.ELSE,
     "true": TokenType.TRUE,
     "false": TokenType.FALSE,
-    "var": TokenType.VAR,
-    "def": TokenType.DEF,
-    "end": TokenType.END,
-    "return": TokenType.RETURN
+    "while": TokenType.WHILE,
+    "continue": TokenType.CONTINUE,
+    "break": TokenType.BREAK,
+    "end": TokenType.END
 }
 
 # List of supported data types in the language
