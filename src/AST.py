@@ -19,6 +19,7 @@ class NodeType(Enum):
     # Expressions
     InfixExpression = "InfixExpression"
     CallExpression = "CallExpression"
+    PrefixExpression = "PrefixExpression"
 
     # Literals
     IntegerLiteral = "IntegerLiteral"
@@ -106,8 +107,9 @@ class ExpressionStatement(Statement):
 class AssignStatement(Statement):
     """An assignment statement (e.g., x = value)."""
     
-    def __init__(self, ident: Expression = None, right_value: Expression = None):
+    def __init__(self, ident: Expression = None, operator: str = "", right_value: Expression = None):
         self.ident = ident
+        self.operator = operator
         self.right_value = right_value
     
     def type(self):
@@ -281,6 +283,24 @@ class CallExpression(Expression):
             "type": self.type().value,
             "function": self.function.json(),
             "args": [arg.json() for arg in self.args]
+        }
+
+
+class PrefixExpression(Expression):
+    """An expression with an operator before its operand (e.g., -a)."""
+    
+    def __init__(self, operator: str, right_node: Expression = None):
+        self.operator = operator
+        self.right_node = right_node
+
+    def type(self):
+        return NodeType.PrefixExpression
+    
+    def json(self):
+        return {
+            "type": self.type().value,
+            "operator": self.operator,
+            "right_node": self.right_node.json()
         }
 
 

@@ -26,6 +26,12 @@ class TokenType(Enum):
 
     # Assignment Operators
     EQ = "EQ"
+    PLUS_EQ = "PLUS_EQ"
+    MINUS_EQ = "MINUS_EQ"
+    MUL_EQ = "MUL_EQ"
+    DIV_EQ = "DIV_EQ"
+    POW_EQ = "POW_EQ"
+    MOD_EQ = "MOD_EQ"
     
     # Delimiters
     LPAREN = "LPAREN"
@@ -35,6 +41,9 @@ class TokenType(Enum):
     SEMICOLON = "SEMICOLON"
     
     # Keywords
+    AND = "AND"
+    OR = "OR"
+    NOT = "NOT"
     VAR = "VAR"
     DEF = "DEF"
     RETURN = "RETURN"
@@ -105,6 +114,9 @@ class Token:
 
 # Dictionary mapping keyword strings to their corresponding token types
 KEYWORDS = {
+    "and": TokenType.AND,
+    "or": TokenType.OR,
+    "not": TokenType.NOT,
     "var": TokenType.VAR,
     "def": TokenType.DEF,
     "return": TokenType.RETURN,

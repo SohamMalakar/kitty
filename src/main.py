@@ -176,11 +176,15 @@ def run_execution(module, lib_path):
     # Map external functions
     concat_func_addr = external_lib.concat
     engine.add_global_mapping(llvm_ir_parsed.get_function("concat"), concat_func_addr)
+
+    myalloc_func_addr = external_lib.myalloc
+    engine.add_global_mapping(llvm_ir_parsed.get_function("myalloc"), myalloc_func_addr)
+
     engine.finalize_object()
 
     # Get and run the main function
     try:
-        entry = engine.get_function_address('main')
+        entry = engine.get_function_address('.main')
         cfunc = CFUNCTYPE(c_int)(entry)
         
         start_time = time.time()

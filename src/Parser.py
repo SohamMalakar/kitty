@@ -9,7 +9,7 @@ from AST import (
     ExpressionStatement, VarStatement, FunctionStatement,
     ReturnStatement, AssignStatement, IfStatement,
     WhileStatement, BreakStatement, ContinueStatement,
-    InfixExpression, CallExpression,
+    InfixExpression, CallExpression, PrefixExpression,
     IntegerLiteral, FloatLiteral, IdentifierLiteral,
     BooleanLiteral, StringLiteral, FunctionParameter
 )
@@ -23,6 +23,7 @@ class PrecedenceType(Enum):
     SUM = auto()
     PRODUCT = auto()
     EXPONENT = auto()
+    PREFIX = auto()
     CALL = auto()
 
 
@@ -69,7 +70,9 @@ class Parser:
             TokenType.STRING: self.parse_string_literal,
             TokenType.LPAREN: self.parse_grouped_expression,
             TokenType.TRUE: self.parse_boolean,
-            TokenType.FALSE: self.parse_boolean
+            TokenType.FALSE: self.parse_boolean,
+            TokenType.MINUS: self.parse_prefix_expression,
+            TokenType.NOT: self.parse_prefix_expression
         }
 
         # Register infix parsing functions
@@ -135,6 +138,24 @@ class Parser:
         """
         token = self.peek_token()
         return PRECEDENCES.get(token.type, PrecedenceType.LOWEST) if token else PrecedenceType.LOWEST
+
+    def peek_token_is_assignment(self) -> bool:
+        """
+        Check if the next token is an assignment operator.
+
+        Returns:
+            True if the next token is an assignment operator, False otherwise
+        """
+        assignment_operators: list[TokenType] = [
+            TokenType.EQ,
+            TokenType.PLUS_EQ,
+            TokenType.MINUS_EQ,
+            TokenType.MUL_EQ,
+            TokenType.DIV_EQ,
+            TokenType.POW_EQ,
+            TokenType.MOD_EQ
+        ]
+        return self.peek_token() and self.peek_token().type in assignment_operators
 
     def expect_token(
         self, 
@@ -249,8 +270,7 @@ class Parser:
             A Statement AST node or None if parsing failed
         """
         # Special case for assignment statements
-        if (self.current_token.type == TokenType.IDENT and 
-            self.peek_token() and self.peek_token().type == TokenType.EQ):
+        if (self.current_token.type == TokenType.IDENT and self.peek_token_is_assignment()):
             return self.parse_assignment_statement()
 
         # Handle different statement types
@@ -283,7 +303,9 @@ class Parser:
         stmt.ident = self.parse_identifier()
 
         self.advance()  # skips the 'IDENT'
-        self.advance()  # skips the '='
+        
+        stmt.operator = self.current_token.literal
+        self.advance()
 
         stmt.right_value = self.parse_expression(PrecedenceType.LOWEST)
 
@@ -699,6 +721,20 @@ class Parser:
             return []
         
         return args
+
+    def parse_prefix_expression(self) -> PrefixExpression:
+        """
+        Parse a prefix expression (e.g., -a).
+
+        Returns:
+            A PrefixExpression AST node
+        """
+        prefix_expr: PrefixExpression = PrefixExpression(operator=self.current_token.literal)
+
+        self.advance()
+        prefix_expr.right_node = self.parse_expression(PrecedenceType.PREFIX)
+
+        return prefix_expr
 
     def parse_identifier(self) -> IdentifierLiteral:
         """

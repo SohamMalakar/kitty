@@ -3,7 +3,7 @@ from llvmlite import ir
 from AST import Node, NodeType, Program, Expression
 from AST import ExpressionStatement, VarStatement, FunctionStatement, ReturnStatement, AssignStatement, IfStatement
 from AST import WhileStatement, BreakStatement, ContinueStatement
-from AST import InfixExpression, CallExpression
+from AST import InfixExpression, CallExpression, PrefixExpression
 from AST import IntegerLiteral, FloatLiteral, IdentifierLiteral, BooleanLiteral, StringLiteral
 from AST import FunctionParameter
 
@@ -49,6 +49,22 @@ class Compiler:
             )
             return ir.Function(self.module, fnty, name="printf")
         
+        def init_myalloc(self) -> ir.Function:
+            """Initialize the myalloc function."""
+            fnty: ir.FunctionType = ir.FunctionType(
+                ir.IntType(8).as_pointer(),
+                [ir.IntType(64)]
+            )
+            return ir.Function(self.module, fnty, name="myalloc")
+        
+        def init_memcpy(self) -> ir.Function:
+            """Initialize the memcpy function."""
+            fnty: ir.FunctionType = ir.FunctionType(
+                ir.IntType(8).as_pointer(),
+                [ir.IntType(8).as_pointer(), ir.IntType(8).as_pointer(), ir.IntType(64)]
+            )
+            return ir.Function(self.module, fnty, name="memcpy")
+        
         def init_concat(self) -> ir.Function:
             """Initialize the string concatenation function."""
             i8 = ir.IntType(8)
@@ -84,8 +100,11 @@ class Compiler:
         
         # Register built-in functions and constants
         self.env.define("printf", init_print(self), self.type_map["int"])
+        self.env.define("myalloc", init_myalloc(self), ir.IntType(8).as_pointer())
+        self.env.define("memcpy", init_memcpy(self), ir.IntType(8).as_pointer())
         self.env.define("concat", init_concat(self), self.type_map["str"])
         self.env.define("pow", init_pow(self), self.type_map["float"])
+
         true_var, false_var = init_booleans(self)
         self.env.define("true", true_var, true_var.type)
         self.env.define("false", false_var, true_var.type)
@@ -117,10 +136,12 @@ class Compiler:
                 self.visit_infix_expression(node)
             case NodeType.CallExpression:
                 self.visit_call_expression(node)
+            case NodeType.PrefixExpression:
+                self.visit_prefix_expression(node)
 
     def visit_program(self, node: Program):
         """Create the main function and compile program statements."""
-        func_name = "main"
+        func_name = ".main"
         param_types: list[ir.Type] = []
         return_type: ir.Type = self.type_map["int"]
 
@@ -134,7 +155,7 @@ class Compiler:
             self.compile(stmt)
         
         # Default return value for main
-        return_value: ir.Constant = ir.Constant(self.type_map["int"], 0)
+        return_value: ir.Constant = ir.Constant(self.type_map["int"], 69)
         self.builder.ret(return_value)
     
     def visit_expression_statement(self, node: ExpressionStatement):
@@ -277,16 +298,70 @@ class Compiler:
     
     def visit_assign_statement(self, node: AssignStatement):
         """Compile an assignment statement."""
-        name = node.ident.value
-        value = node.right_value
-
-        value, _ = self.resolve_value(value)
+        name: str = node.ident.value
+        operator: str = node.operator
+        value: Expression = node.right_value
 
         if self.env.lookup(name) is None:
             raise NameError(f"Variable '{name}' not defined.")
-        else:
-            ptr, _ = self.env.lookup(name)
-            self.builder.store(value, ptr)
+
+        right_value, right_type = self.resolve_value(value)
+
+        var_ptr, _ = self.env.lookup(name)
+        orig_value = self.builder.load(var_ptr)
+
+        if isinstance(orig_value.type, ir.IntType) and isinstance(right_type, ir.DoubleType):
+            # Convert int to float
+            orig_value = self.builder.sitofp(orig_value, self.type_map["float"])
+        
+        if isinstance(orig_value.type, ir.DoubleType) and isinstance(right_type, ir.IntType):
+            # Convert int to float
+            right_value = self.builder.sitofp(right_value, self.type_map["float"])
+        
+        value = None
+        Type = None
+        match operator:
+            case '=':
+                value = right_value
+            case '+=':
+                if isinstance(orig_value.type, ir.IntType) and isinstance(right_type, ir.IntType):
+                    value = self.builder.add(orig_value, right_value)
+                elif isinstance(orig_value.type, ir.PointerType) and isinstance(right_type, ir.PointerType):
+                    value, _ = self.handle_string_concatenation(orig_value, right_value)
+                else:
+                    value = self.builder.fadd(orig_value, right_value)
+            case '-=':
+                if isinstance(orig_value.type, ir.IntType) and isinstance(right_type, ir.IntType):
+                    value = self.builder.sub(orig_value, right_value)
+                else:
+                    value = self.builder.fsub(orig_value, right_value)
+            case '*=':
+                if isinstance(orig_value.type, ir.IntType) and isinstance(right_type, ir.IntType):
+                    value = self.builder.mul(orig_value, right_value)
+                else:
+                    value = self.builder.fmul(orig_value, right_value)
+            case '/=':
+                if isinstance(orig_value.type, ir.IntType) and isinstance(right_type, ir.IntType):
+                    value = self.builder.sdiv(orig_value, right_value)
+                else:
+                    value = self.builder.fdiv(orig_value, right_value)
+            case '%=':
+                if isinstance(orig_value.type, ir.IntType) and isinstance(right_type, ir.IntType):
+                    value = self.builder.srem(orig_value, right_value)
+                else:
+                    value = self.builder.frem(orig_value, right_value)
+            case '**=':
+                if isinstance(orig_value.type, ir.IntType) and isinstance(right_type, ir.IntType):
+                    orig_value = self.builder.sitofp(orig_value, self.type_map["float"])
+                    right_value = self.builder.sitofp(right_value, self.type_map["float"])
+                    value = self.builtin_pow(orig_value, right_value)
+                else:
+                    value = self.builtin_pow(orig_value, right_value)
+            case _:
+                raise NotImplementedError(f"Unsupported assignment operator: {operator}")
+        
+        ptr, _ = self.env.lookup(name)
+        self.builder.store(value, ptr)
 
     def visit_call_expression(self, node: CallExpression) -> tuple[ir.Instruction, ir.Type]:
         """Compile a function call expression."""
@@ -312,6 +387,33 @@ class Compiler:
                 ret = self.builder.call(func, args)
         
         return ret, ret_type
+    
+    def visit_prefix_expression(self, node: PrefixExpression) ->tuple[ir.Value, ir.Type]:
+        """Compile a prefix expression (op a)."""
+        operator: str = node.operator
+        right_node: Expression = node.right_node
+
+        right_value, right_type = self.resolve_value(right_node)
+
+        Type = None
+        value = None
+        if isinstance(right_type, ir.DoubleType):
+            Type = self.type_map["float"]
+            match operator:
+                case '-':
+                    value = self.builder.fmul(right_value, ir.Constant(Type, -1.0))
+                case 'not':
+                    value = self.builder.fcmp_ordered("==", right_value, ir.Constant(ir.DoubleType(), 0.0))
+        
+        elif isinstance(right_type, ir.IntType):
+            Type = self.type_map["int"]
+            match operator:
+                case '-':
+                    value = self.builder.mul(right_value, ir.Constant(Type, -1))
+                case 'not':
+                    value = self.builder.icmp_signed("==", right_value, ir.Constant(ir.IntType(32), 0))
+        
+        return value, Type
 
     def visit_infix_expression(self, node: InfixExpression):
         """Compile an infix expression (a op b)."""
@@ -447,8 +549,11 @@ class Compiler:
                 
             case NodeType.CallExpression:
                 return self.visit_call_expression(node)
+            
+            case NodeType.PrefixExpression:
+                return self.visit_prefix_expression(node)
 
-    def convert_string(self, string: str) -> tuple[ir.Constant, ir.ArrayType]:
+    def convert_string(self, string: str) -> tuple[ir.Constant, ir.Type]:
         """Convert a string literal to an LLVM IR global string variable."""
         # string = string.replace('\\n', '\n\0')
         # More escape sequences can be added here
@@ -469,18 +574,33 @@ class Compiler:
         else:
             fmt: str = string
         
-        # fmt: str = f"{string}\0"
-        c_fmt: ir.Constant = ir.Constant(ir.ArrayType(ir.IntType(8), len(fmt)), 
-                                         bytearray(fmt.encode("utf8")))
+        # Get the byte array of the string
+        byte_array = bytearray(fmt.encode("utf8"))
+        str_len = len(byte_array)
+        
+        myalloc_fn, _ = self.env.lookup("myalloc")
+        
+        # Allocate memory for the string
+        size = ir.Constant(ir.IntType(64), str_len)
+        ptr = self.builder.call(myalloc_fn, [size])
+        
+        # Create an array constant for the string
+        c_fmt = ir.Constant(ir.ArrayType(ir.IntType(8), str_len), byte_array)
+        
+        # Create a temporary alloca for the string constant
+        temp = self.builder.alloca(c_fmt.type)
+        self.builder.store(c_fmt, temp)
+        
+        # Cast to i8* for memcpy
+        temp_cast = self.builder.bitcast(temp, ir.IntType(8).as_pointer())
+        ptr_cast = self.builder.bitcast(ptr, ir.IntType(8).as_pointer())
+        
+        memcpy_fn, _ = self.env.lookup("memcpy")
 
-        # Create a global variable for the string
-        global_fmt = ir.GlobalVariable(self.module, c_fmt.type, 
-                                       name=f'__str_{self.increment_counter()}')
-        global_fmt.linkage = 'internal'
-        global_fmt.global_constant = True
-        global_fmt.initializer = c_fmt
-
-        return global_fmt, global_fmt.type
+        # Copy the string data to the heap
+        self.builder.call(memcpy_fn, [ptr_cast, temp_cast, size])
+        
+        return ptr, ir.PointerType(ir.IntType(8))
 
     def builtin_printf(self, params: list[ir.Instruction], return_type: ir.Type) -> None:
         """Handle built-in printf function."""
