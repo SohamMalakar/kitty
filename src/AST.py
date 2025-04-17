@@ -15,6 +15,7 @@ class NodeType(Enum):
     WhileStatement = "WhileStatement"
     BreakStatement = "BreakStatement"
     ContinueStatement = "ContinueStatement"
+    ImportStatement = "ImportStatement"
 
     # Expressions
     InfixExpression = "InfixExpression"
@@ -186,6 +187,21 @@ class ContinueStatement(Statement):
     def json(self):
         return {
             "type": self.type().value
+        }
+
+
+class ImportStatement(Statement):
+    """A import statement to import external library written in this language"""
+    def __init__(self, file_path: str):
+        self.file_path = file_path
+
+    def type(self):
+        return NodeType.ImportStatement
+    
+    def json(self):
+        return {
+            "type": self.type().value,
+            "file_path": self.file_path
         }
 
 

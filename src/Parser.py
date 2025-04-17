@@ -8,7 +8,7 @@ from AST import (
     Statement, Expression, Program,
     ExpressionStatement, VarStatement, FunctionStatement,
     ReturnStatement, AssignStatement, IfStatement,
-    WhileStatement, BreakStatement, ContinueStatement,
+    WhileStatement, BreakStatement, ContinueStatement, ImportStatement,
     InfixExpression, CallExpression, PrefixExpression,
     IntegerLiteral, FloatLiteral, IdentifierLiteral,
     BooleanLiteral, StringLiteral, FunctionParameter
@@ -288,6 +288,8 @@ class Parser:
             return self.parse_break_statement()
         elif self.current_token.type == TokenType.CONTINUE:
             return self.parse_continue_statement()
+        elif self.current_token.type == TokenType.IMPORT:
+            return self.parse_import_statement()
         else:
             return self.parse_expression_statement()
     
@@ -461,6 +463,24 @@ class Parser:
             return None
 
         return stmt
+    
+    def parse_import_statement(self) -> Optional[ImportStatement]:
+        """
+        Parse a import statement.
+        
+        Returns:
+            A ImportStatement AST node or None if parsing failed
+        """
+        if not self.expect_token(TokenType.STRING, "Expected a file path!"):
+            return None
+        
+        stmt = ImportStatement(file_path=self.current_token.literal)
+        
+        if not self.expect_semicolon():
+            return None
+
+        return stmt
+
 
     def parse_function_statement(self) -> Optional[FunctionStatement]:
         """

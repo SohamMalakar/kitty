@@ -1,0 +1,7 @@
+def fibo(num: int) -> int:
+    if num <= 1:
+        return 1;
+    end
+    
+    return fibo(num - 1) + fibo(num - 2);
+end

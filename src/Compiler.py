@@ -1,14 +1,18 @@
 from llvmlite import ir
+import os
+import sys
 
 from AST import Node, NodeType, Program, Expression
 from AST import ExpressionStatement, VarStatement, FunctionStatement, ReturnStatement, AssignStatement, IfStatement
-from AST import WhileStatement, BreakStatement, ContinueStatement
+from AST import WhileStatement, BreakStatement, ContinueStatement, ImportStatement
 from AST import InfixExpression, CallExpression, PrefixExpression
 from AST import IntegerLiteral, FloatLiteral, IdentifierLiteral, BooleanLiteral, StringLiteral
 from AST import FunctionParameter
 
 from Environment import Environment
 
+from Lexer import Lexer
+from Parser import Parser
 
 class Compiler:
     def __init__(self):
@@ -32,6 +36,8 @@ class Compiler:
 
         self.breakpoints: list[ir.Block] = []
         self.continues: list[ir.Block] = []
+
+        self.global_parsed_pallets: dict[str, Program] = {}
     
     def increment_counter(self) -> int:
         """Generate a unique counter value for naming."""
@@ -132,6 +138,8 @@ class Compiler:
                 self.visit_break_statement(node)
             case NodeType.ContinueStatement:
                 self.visit_continue_statement(node)
+            case NodeType.ImportStatement:
+                self.visit_import_statement(node)
             case NodeType.InfixExpression:
                 self.visit_infix_expression(node)
             case NodeType.CallExpression:
@@ -221,6 +229,38 @@ class Compiler:
             self.builder.branch(self.continues[-1])
         else:
             raise RuntimeError("Continue statement outside of loop.")
+    
+    def visit_import_statement(self, node: ImportStatement):
+        """Compile an import statement."""
+        file_path: str = node.file_path
+
+        if self.global_parsed_pallets.get(file_path) is not None:
+            print(f"[Warning]: `{file_path}` is already imported globally\n")
+            return
+        
+        with open(os.path.abspath(file_path), "r") as f:
+            pallet_code: str = f.read()
+        
+        l: Lexer = Lexer(source_code=pallet_code)
+        tokens = l.tokenize()
+
+        if len(l.error_handler.errors) > 0:
+            print(f"Error with imported pallet: {file_path}")
+            l.error_handler.report()
+            sys.exit(1)
+
+        p: Parser = Parser(tokens=tokens)
+
+        program: Program = p.parse_program()
+        if len(p.error_handler.errors) > 0:
+            print(f"Error with imported pallet: {file_path}")
+            p.error_handler.report()
+            sys.exit(1)
+        
+        for stmt in program.statements:
+            self.compile(stmt)
+
+        self.global_parsed_pallets[file_path] = program
 
     def visit_var_statement(self, node: VarStatement):
         """Compile a variable declaration statement."""

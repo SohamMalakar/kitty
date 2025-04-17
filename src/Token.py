@@ -55,6 +55,7 @@ class TokenType(Enum):
     WHILE = "WHILE"
     CONTINUE = "CONTINUE"
     BREAK = "BREAK"
+    IMPORT = "IMPORT"
     END = "END"
 
     # Typing
@@ -128,6 +129,7 @@ KEYWORDS = {
     "while": TokenType.WHILE,
     "continue": TokenType.CONTINUE,
     "break": TokenType.BREAK,
+    "import": TokenType.IMPORT,
     "end": TokenType.END
 }
 
