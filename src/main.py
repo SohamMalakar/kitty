@@ -22,7 +22,7 @@ def main():
         "parser_debug": False,
         "compiler_debug": False,
         "run_code": True,
-        "lib_path": "./src/libpy.so"
+        "lib_path": "./src/libs.so"
     }
     
     # Validate command-line arguments
@@ -174,11 +174,11 @@ def run_execution(module, lib_path):
     engine = llvm.create_mcjit_compiler(llvm_ir_parsed, target_machine)
 
     # Map external functions
-    concat_func_addr = external_lib.concat
-    engine.add_global_mapping(llvm_ir_parsed.get_function("concat"), concat_func_addr)
+    alloc_func_addr = external_lib.alloc
+    engine.add_global_mapping(llvm_ir_parsed.get_function("alloc"), alloc_func_addr)
 
-    myalloc_func_addr = external_lib.myalloc
-    engine.add_global_mapping(llvm_ir_parsed.get_function("myalloc"), myalloc_func_addr)
+    _strcat_func_addr = external_lib._strcat
+    engine.add_global_mapping(llvm_ir_parsed.get_function("_strcat"), _strcat_func_addr)
 
     engine.finalize_object()
 

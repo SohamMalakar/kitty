@@ -47,7 +47,7 @@ class Compiler:
     def initialize_builtins(self):
         """Set up built-in functions and constants."""
         def init_print(self) -> ir.Function:
-            """Initialize the printf function."""
+            """Initialize the print function."""
             fnty: ir.FunctionType = ir.FunctionType(
                 self.type_map["int"], 
                 [ir.IntType(8).as_pointer()], 
@@ -55,13 +55,13 @@ class Compiler:
             )
             return ir.Function(self.module, fnty, name="printf")
         
-        def init_myalloc(self) -> ir.Function:
+        def init_alloc(self) -> ir.Function:
             """Initialize the myalloc function."""
             fnty: ir.FunctionType = ir.FunctionType(
                 ir.IntType(8).as_pointer(),
                 [ir.IntType(64)]
             )
-            return ir.Function(self.module, fnty, name="myalloc")
+            return ir.Function(self.module, fnty, name="alloc")
         
         def init_memcpy(self) -> ir.Function:
             """Initialize the memcpy function."""
@@ -71,16 +71,26 @@ class Compiler:
             )
             return ir.Function(self.module, fnty, name="memcpy")
         
-        def init_concat(self) -> ir.Function:
+        def init_strcat(self) -> ir.Function:
             """Initialize the string concatenation function."""
-            i8 = ir.IntType(8)
-            voidptr_ty = i8.as_pointer()
+            char_ptr = ir.IntType(8).as_pointer()
 
             fnty: ir.FunctionType  = ir.FunctionType(
-                voidptr_ty, 
-                [voidptr_ty, voidptr_ty]
+                char_ptr, 
+                [char_ptr, char_ptr]
             )
-            return ir.Function(self.module, fnty, name="concat")
+            return ir.Function(self.module, fnty, name="_strcat")
+        
+        def init_len(self) -> ir.Function:
+            """Initialize the len function."""
+            char_ptr = ir.IntType(8).as_pointer()
+            int_type = ir.IntType(64)
+
+            fnty: ir.FunctionType  = ir.FunctionType(
+                int_type, 
+                [char_ptr]
+            )
+            return ir.Function(self.module, fnty, name="strlen")
         
         def init_pow(self) -> ir.Function:
             """Initialize the power function."""
@@ -105,11 +115,12 @@ class Compiler:
             return true_var, false_var
         
         # Register built-in functions and constants
-        self.env.define("printf", init_print(self), self.type_map["int"])
-        self.env.define("myalloc", init_myalloc(self), ir.IntType(8).as_pointer())
-        self.env.define("memcpy", init_memcpy(self), ir.IntType(8).as_pointer())
-        self.env.define("concat", init_concat(self), self.type_map["str"])
+        self.env.define("print", init_print(self), self.type_map["int"])
+        self.env.define("_alloc", init_alloc(self), ir.IntType(8).as_pointer())
+        self.env.define("_memcpy", init_memcpy(self), ir.IntType(8).as_pointer())
+        self.env.define("_strcat", init_strcat(self), self.type_map["str"])
         self.env.define("pow", init_pow(self), self.type_map["float"])
+        self.env.define("len", init_len(self), ir.IntType(64))
 
         true_var, false_var = init_booleans(self)
         self.env.define("true", true_var, true_var.type)
@@ -163,7 +174,7 @@ class Compiler:
             self.compile(stmt)
         
         # Default return value for main
-        return_value: ir.Constant = ir.Constant(self.type_map["int"], 69)
+        return_value: ir.Constant = ir.Constant(self.type_map["int"], 0)
         self.builder.ret(return_value)
     
     def visit_expression_statement(self, node: ExpressionStatement):
@@ -244,7 +255,7 @@ class Compiler:
         l: Lexer = Lexer(source_code=pallet_code)
         tokens = l.tokenize()
 
-        if len(l.error_handler.errors) > 0:
+        if l.error_handler.has_error:
             print(f"Error with imported pallet: {file_path}")
             l.error_handler.report()
             sys.exit(1)
@@ -252,7 +263,7 @@ class Compiler:
         p: Parser = Parser(tokens=tokens)
 
         program: Program = p.parse_program()
-        if len(p.error_handler.errors) > 0:
+        if p.error_handler.has_error:
             print(f"Error with imported pallet: {file_path}")
             p.error_handler.report()
             sys.exit(1)
@@ -392,8 +403,6 @@ class Compiler:
                     value = self.builder.frem(orig_value, right_value)
             case '**=':
                 if isinstance(orig_value.type, ir.IntType) and isinstance(right_type, ir.IntType):
-                    orig_value = self.builder.sitofp(orig_value, self.type_map["float"])
-                    right_value = self.builder.sitofp(right_value, self.type_map["float"])
                     value = self.builtin_pow(orig_value, right_value)
                 else:
                     value = self.builtin_pow(orig_value, right_value)
@@ -419,8 +428,14 @@ class Compiler:
 
         # Handle built-in or user-defined functions
         match name:
-            case 'printf':
-                ret = self.builtin_printf(params=args, return_type=types[0])
+            case 'print':
+                ret = self.builtin_print(params=args, return_type=types[0])
+                ret_type = self.type_map['int']
+            case 'pow':
+                ret = self.builtin_pow(args[0], args[1])
+                ret_type = self.type_map['float']
+            case 'len':
+                ret = self.builtin_len(args[0])
                 ret_type = self.type_map['int']
             case _:
                 func, ret_type = self.env.lookup(name)
@@ -515,8 +530,6 @@ class Compiler:
             case '%':
                 return self.builder.srem(left_value, right_value)
             case '**':
-                left_value = self.builder.sitofp(left_value, self.type_map["float"])
-                right_value = self.builder.sitofp(right_value, self.type_map["float"])
                 result = self.builtin_pow(left_value, right_value)
                 # return self.builder.fptosi(result, self.type_map["int"])
                 return result
@@ -544,15 +557,14 @@ class Compiler:
     def handle_string_concatenation(self, left_value, right_value):
         """Handle string concatenation operation."""
         # Get the function and call it
-        i8 = ir.IntType(8)
-        voidptr_ty = i8.as_pointer()
+        void_ptr = ir.IntType(8).as_pointer()
 
-        fn, ret_type = self.env.lookup("concat")
+        fn, ret_type = self.env.lookup("_strcat")
 
-        src1_cast = self.builder.bitcast(left_value, voidptr_ty)
-        src2_cast = self.builder.bitcast(right_value, voidptr_ty)
+        str1_char_ptr = self.builder.bitcast(left_value, void_ptr)
+        str2_char_ptr = self.builder.bitcast(right_value, void_ptr)
 
-        result = self.builder.call(fn, [src1_cast, src2_cast])
+        result = self.builder.call(fn, [str1_char_ptr, str2_char_ptr])
 
         return result, ret_type
 
@@ -618,11 +630,11 @@ class Compiler:
         byte_array = bytearray(fmt.encode("utf8"))
         str_len = len(byte_array)
         
-        myalloc_fn, _ = self.env.lookup("myalloc")
+        alloc_fn, _ = self.env.lookup("_alloc")
         
         # Allocate memory for the string
         size = ir.Constant(ir.IntType(64), str_len)
-        ptr = self.builder.call(myalloc_fn, [size])
+        ptr = self.builder.call(alloc_fn, [size])
         
         # Create an array constant for the string
         c_fmt = ir.Constant(ir.ArrayType(ir.IntType(8), str_len), byte_array)
@@ -635,29 +647,29 @@ class Compiler:
         temp_cast = self.builder.bitcast(temp, ir.IntType(8).as_pointer())
         ptr_cast = self.builder.bitcast(ptr, ir.IntType(8).as_pointer())
         
-        memcpy_fn, _ = self.env.lookup("memcpy")
+        memcpy_fn, _ = self.env.lookup("_memcpy")
 
         # Copy the string data to the heap
         self.builder.call(memcpy_fn, [ptr_cast, temp_cast, size])
         
         return ptr, ir.PointerType(ir.IntType(8))
 
-    def builtin_printf(self, params: list[ir.Instruction], return_type: ir.Type) -> None:
-        """Handle built-in printf function."""
-        func, _ = self.env.lookup('printf')
+    def builtin_print(self, params: list[ir.Instruction], return_type: ir.Type) -> None:
+        """Handle built-in print function."""
+        func, _ = self.env.lookup('print')
         c_str = self.builder.alloca(return_type)
         self.builder.store(params[0], c_str)
         rest_params = params[1:]
 
         if isinstance(params[0], ir.LoadInstr):
-            # Printing from a variable (e.g., var a: str = "hello"; printf(a))
+            # Printing from a variable (e.g., var a: str = "hello"; print(a))
             c_fmt: ir.LoadInstr = params[0]
             g_var_ptr = c_fmt.operands[0]
             string_val = self.builder.load(g_var_ptr)
             fmt_arg = self.builder.bitcast(string_val, ir.IntType(8).as_pointer())
             return self.builder.call(func, [fmt_arg, *rest_params])
         else:
-            # Printing from a string literal (e.g., printf("hello %i", 23))
+            # Printing from a string literal (e.g., print("hello %i", 23))
             fmt_arg = self.builder.bitcast(
                 # self.module.get_global(f"__str_{self.counter}"), 
                 params[0],  # Use the first parameter as the format string
@@ -668,4 +680,15 @@ class Compiler:
     def builtin_pow(self, left_value: ir.Value, right_value: ir.Value) -> ir.Instruction:
         """Handle built-in power function."""
         func, ret_type = self.env.lookup("pow")
+
+        if isinstance(left_value.type, ir.IntType):
+            left_value = self.builder.sitofp(left_value, self.type_map["float"])
+        if isinstance(right_value.type, ir.IntType):
+            right_value = self.builder.sitofp(right_value, self.type_map["float"])
+
         return self.builder.call(func, [left_value, right_value])
+    
+    def builtin_len(self, string: ir.Value) -> ir.Instruction:
+        """Handle built-in len function."""
+        func, ret_type = self.env.lookup("len")
+        return self.builder.call(func, [string])
