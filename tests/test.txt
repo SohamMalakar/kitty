@@ -1,5 +1,0 @@
-import "tests/fibo.txt";
-
-var num: int = 40;
-
-printf("Fibo of %d is %d\n", num, fibo(num));

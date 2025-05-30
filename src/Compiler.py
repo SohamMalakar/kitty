@@ -18,7 +18,7 @@ class Compiler:
     def __init__(self):
         # Type mapping from language types to LLVM IR types
         self.type_map: dict[str, ir.Type] = {
-            "int": ir.IntType(32),
+            "int": ir.IntType(64),
             "float": ir.DoubleType(),
             "bool": ir.IntType(1),
             "str": ir.PointerType(ir.IntType(8)),
@@ -279,6 +279,18 @@ class Compiler:
         value = node.value
         value_type = node.value_type  # For future type checking
 
+        default_values = {
+            'int': IntegerLiteral(0),
+            'float': FloatLiteral(0.0),
+            'bool': BooleanLiteral(False),
+            'str': StringLiteral("")
+        }
+
+        if value is None:
+            if value_type not in default_values:
+                raise TypeError(f"Unsupported type for variable '{name}': {value_type}")
+            value = default_values[value_type]
+
         value, type_info = self.resolve_value(node=value)
 
         if self.env.lookup(name) is None:
@@ -466,7 +478,7 @@ class Compiler:
                 case '-':
                     value = self.builder.mul(right_value, ir.Constant(Type, -1))
                 case 'not':
-                    value = self.builder.icmp_signed("==", right_value, ir.Constant(ir.IntType(32), 0))
+                    value = self.builder.icmp_signed("==", right_value, ir.Constant(ir.IntType(64), 0))
         
         return value, Type
 

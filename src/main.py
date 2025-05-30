@@ -13,6 +13,8 @@ from Lexer import Lexer
 from Parser import Parser
 from Compiler import Compiler
 
+from Sanitizer import sanitize
+
 
 def main():
     """Main entry point for the compiler."""
@@ -72,6 +74,8 @@ def run_lexical_analysis(src, filename, debug=False):
     """
     lexer = Lexer(src, file_path=filename)
     tokens = lexer.tokenize()
+
+    tokens = sanitize(tokens=tokens)
 
     if debug:
         print("===== SOURCE CODE =====")

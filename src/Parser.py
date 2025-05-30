@@ -339,8 +339,13 @@ class Parser:
             return None
         stmt.value_type = self.current_token.literal
 
+        # Parse optional initialization expression
+        if self.peek_token() and self.peek_token().type == TokenType.SEMICOLON:
+            self.advance()
+            return stmt
+
         # Parse equals sign
-        if not self.expect_token(TokenType.EQ, "Expected '=' after type"):
+        if not self.expect_token(TokenType.EQ, "Expected '=' or ';' after type"):
             return None
         
         # Parse initialization expression
